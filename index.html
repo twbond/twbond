@@ -96,6 +96,7 @@ tbody tr:hover td{background:var(--accent-soft)}
 .tag.sub{background:var(--sub-bg);color:var(--sub);border:1px solid var(--sub-line);margin-left:6px}
 .tag.sec{background:var(--sec-bg);color:var(--sec);border:1px solid var(--sec-line);margin-left:6px}
 td .rt{color:var(--muted);font-size:12px;font-weight:400}
+td .rt2{font-size:12px;color:var(--sec);margin-top:1px}
 h3.sub-h{font-size:14px;margin:14px 0 6px;padding-left:8px;border-left:3px solid var(--accent)}
 .tag.unk{background:transparent;color:var(--muted);border:1px dashed var(--line);font-weight:400;margin-left:6px}
 tbody tr.subrow td{background:var(--sub-bg)}
@@ -222,7 +223,7 @@ body.pdf-mode .chartbox{height:280px}
   <nav id="nav">
     <button data-t="t1" class="on">總覽</button>
     <button data-t="t2">公債：指標券／非指標券</button>
-    <button data-t="t3">公司債及金融債</button>
+    <button data-t="t3">公司債/金融債</button>
     <button data-t="t4">個別債券查詢</button>
     <button data-t="t5">成交明細</button>
   </nav>
@@ -302,12 +303,12 @@ body.pdf-mode .chartbox{height:280px}
     </div>
   </section>
 
-  <!-- 3 公司債及金融債 -->
+  <!-- 3 公司債/金融債 -->
   <section class="tab" id="t3">
     <div class="kpis" id="kpi3"></div>
     <div class="card">
-      <h2>當日公司債及金融債成交明細</h2>
-      <p class="note">利差＝處所行情表公布的「與公債殖利率之差異點」（bp）。成交面額單位：億元。債券評等取自公開資訊觀測站：有債券本身的評等就顯示債券評等，沒有則顯示發行公司評等並註明「（發行人）」；點欄位名稱可依評等高低排序。</p>
+      <h2>當日公司債/金融債成交明細</h2>
+      <p class="note">利差＝處所行情表公布的「與公債殖利率之差異點」（bp）。成交面額單位：億元。債券評等取自公開資訊觀測站：有債券本身的評等就顯示債券評等，沒有則顯示發行公司評等並註明「（發行人）」；有擔保的債券另在下一行顯示擔保行的信評。點欄位名稱可依評等高低排序（有擔保的債券依擔保行信評排序）。</p>
       <p class="legend"><span class="tag sub" style="margin-left:0">次順位</span> 底色標示的是次順位債券，依公開資訊觀測站登載的債券全名與擔保情形判斷。<span class="tag unk">順位未確認</span> 表示該債券已到期下櫃，無法查詢。<span class="tag sec">O銀保</span> 表示有擔保債券，標籤為擔保機構簡稱加「保」（例如第一商業銀行保證＝一銀保；滑鼠移到標籤上可看擔保機構全名；查不到擔保機構時顯示「有擔」），依公開資訊觀測站資料判斷；與次順位同時符合時兩個標籤並列。</p>
       <div class="tw scroll" id="tbCorpDay"></div>
     </div>
@@ -429,12 +430,18 @@ const secText = r => (r.type==='公司債'||r.type==='金融債') ? (SECURED.has
 const nameCell = (v,r) => esc(v) + subTag(r) + secTag(r.code);
 // credit rating from MOPS: [grade, agency, date, issuerFlag] — the bond's own rating, else the issuer's (marked 發行人)
 const RATINGS = DATA.ratings || {};
-const ratingCell = (v,r) => { const x = RATINGS[r.code]; if(!x) return '<span class="dim">–</span>';
-  const ag = String(x[1]||'').replace(/[（(〈].*$/,'').trim();
-  return `<b>${esc(x[0])}</b> <span class="rt">${esc(ag)}${x[3]?'（發行人）':''}</span>`; };
+// secured bonds also show the guarantor's rating on a second line: 擔保行（一銀）twAAA 中華信評
+const GRATINGS = DATA.guarRatings || {};
+const agShort = s => String(s||'').replace(/[（(〈].*$/,'').trim();
+const ratingCell = (v,r) => {
+  const x = RATINGS[r.code], g = SECURED.has(r.code) ? GRATINGS[r.code] : null;
+  let h = x ? `<b>${esc(x[0])}</b> <span class="rt">${esc(agShort(x[1]))}${x[3]?'（發行人）':''}</span>` : '<span class="dim">–</span>';
+  if(g) h += `<div class="rt2">擔保行（${esc(GUARS[r.code] ? guarShort(GUARS[r.code]) : '')}）<b>${esc(g[0])}</b> <span class="rt">${esc(agShort(g[1]))}</span></div>`;
+  return h; };
 const RT_SCALE = ['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC','CC','C','D'];
 const RT_MOODY = {Aaa:'AAA',Aa1:'AA+',Aa2:'AA',Aa3:'AA-',A1:'A+',A2:'A',A3:'A-',Baa1:'BBB+',Baa2:'BBB',Baa3:'BBB-',Ba1:'BB+',Ba2:'BB',Ba3:'BB-',B1:'B+',B2:'B',B3:'B-'};
-const ratingRank = r => { const x = RATINGS[r.code]; if(!x) return null;   // higher = better, for sorting
+const ratingRank = r => {   // higher = better, for sorting; a secured bond ranks by its guarantor's rating
+  const x = (SECURED.has(r.code) && GRATINGS[r.code]) || RATINGS[r.code]; if(!x) return null;
   let g = String(x[0]).replace(/\(twn\)|\.tw|^tw/gi,'').trim(); g = RT_MOODY[g] || g.toUpperCase();
   const i = RT_SCALE.indexOf(g); return i < 0 ? null : 100 - i; };
 const subRow = r => r.sub ? 'subrow' : '';
