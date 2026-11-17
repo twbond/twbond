@@ -335,8 +335,9 @@ body.pdf-mode .chartbox{height:280px}
     </div>
     <div class="card">
       <h2>加權平均殖利率與利差</h2>
-      <p class="note">殖利率：兩市場合計的面額加權平均（%）；利差：處所的面額加權平均（bp）。可點選項目（可複選），點「全部」顯示所有項目。利差會跟著所選的殖利率：選公司債殖利率＋利差 → 公司債利差；選金融債殖利率＋利差 → 金融債利差；兩種殖利率都選（或只選利差）→ 公司債＋金融債合計的利差。</p>
+      <p class="note">殖利率：兩市場合計的面額加權平均（%）；利差：處所的面額加權平均（bp）。可點選項目（可複選），點「全部」顯示所有項目。利差會跟著所選的殖利率：選公司債殖利率＋利差 → 公司債利差；選金融債殖利率＋利差 → 金融債利差；兩種殖利率都選（或只選利差）→ 公司債＋金融債合計的利差。年期依成交當時的剩餘年期分組（1年：1.5年以內；2年：1.5–2.5；3年：2.5–4；5年：4–6；7年：6–8.5；10年：8.5–12.5；15年以上：12.5年以上），選定年期後殖利率與利差都只計算該年期的成交。</p>
       <div class="seg" id="seg3b"><button class="on" data-v="all">全部</button><button data-v="c">公司債殖利率</button><button data-v="f">金融債殖利率</button><button data-v="rp">利差</button></div>
+      <div class="seg" id="seg3t" style="margin-left:8px"><button class="on" data-v="all">全部年期</button><button data-v="1">1年</button><button data-v="2">2年</button><button data-v="3">3年</button><button data-v="5">5年</button><button data-v="7">7年</button><button data-v="10">10年</button><button data-v="15">15年以上</button></div>
       <div class="chartbox"><canvas id="c3b"></canvas></div>
     </div>
     <div class="card">
@@ -816,23 +817,31 @@ function renderT3(){
     {label:'金融債', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>filt(r)&&r.type==='金融債')),0)/YI), backgroundColor:css('--fin'), stack:'s'}]},
     options:{scales:{x:{stacked:true,ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:16},grid:{display:false}},y:{stacked:true,title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
 
-  const ys = G.map(g=>{ const rr = g.days.flatMap(d=>recs(d).filter(r=>r.type!=='公債')); return {c:wavg(rr.filter(r=>r.type==='公司債'),'yAvg'), f:wavg(rr.filter(r=>r.type==='金融債'),'yAvg'), rp:wavg(rr.filter(r=>r.mkt==='O'),'rp'), rpC:wavg(rr.filter(r=>r.mkt==='O' && r.type==='公司債'),'rp'), rpF:wavg(rr.filter(r=>r.mkt==='O' && r.type==='金融債'),'rp')}; });
+  // 年期（依剩餘年期分組）：SEL3T = 'all' 或 1/2/3/5/7/10/15
+  const grpRR = G.map(g=>g.days.flatMap(d=>recs(d).filter(r=>r.type!=='公債')));
+  const calcYS = ten => grpRR.map(all=>{ const rr = ten==='all' ? all : all.filter(r=>corpBucket(r.dy)===ten);
+    return {c:wavg(rr.filter(r=>r.type==='公司債'),'yAvg'), f:wavg(rr.filter(r=>r.type==='金融債'),'yAvg'), rp:wavg(rr.filter(r=>r.mkt==='O'),'rp'), rpC:wavg(rr.filter(r=>r.mkt==='O' && r.type==='公司債'),'rp'), rpF:wavg(rr.filter(r=>r.mkt==='O' && r.type==='金融債'),'rp')}; });
   // point markers: 金融債 trade on scattered days, so an isolated day (or a one-day range) is only visible as a point
   const pr = (monthly() || G.length <= 31) ? 2.5 : 0;
   // 項目選取：SEL3B 為空 = 全部；可複選。沒有選到的座標軸會隱藏
   const SERIES3B = [
-    {k:'c', ds:{label:'公司債殖利率%', data:ys.map(x=>x.c), borderColor:css('--corp'), backgroundColor:css('--corp'), pointRadius:pr, borderWidth:1.8, spanGaps:true, yAxisID:'y'}},
-    {k:'f', ds:{label:'金融債殖利率%', data:ys.map(x=>x.f), borderColor:css('--fin'), backgroundColor:css('--fin'), pointRadius:2.5, borderWidth:1.8, spanGaps:true, yAxisID:'y'}},
-    {k:'rp', ds:{label:'利差 bp（右軸）', data:ys.map(x=>x.rp), borderColor:css('--sub'), backgroundColor:css('--sub'), borderDash:[4,3], pointRadius:pr, borderWidth:1.5, spanGaps:true, yAxisID:'y2'}}];
+    {k:'c', ds:{label:'公司債殖利率%', data:[], borderColor:css('--corp'), backgroundColor:css('--corp'), pointRadius:pr, borderWidth:1.8, spanGaps:true, yAxisID:'y'}},
+    {k:'f', ds:{label:'金融債殖利率%', data:[], borderColor:css('--fin'), backgroundColor:css('--fin'), pointRadius:2.5, borderWidth:1.8, spanGaps:true, yAxisID:'y'}},
+    {k:'rp', ds:{label:'利差 bp（右軸）', data:[], borderColor:css('--sub'), backgroundColor:css('--sub'), borderDash:[4,3], pointRadius:pr, borderWidth:1.5, spanGaps:true, yAxisID:'y2'}}];
   const drawYS = () => {
+    const ys = calcYS(SEL3T), tl = SEL3T==='all' ? '' : (SEL3T===15 ? '15年以上' : SEL3T+'年')+' ';
+    SERIES3B[0].ds.data = ys.map(x=>x.c); SERIES3B[0].ds.label = tl+'公司債殖利率%';
+    SERIES3B[1].ds.data = ys.map(x=>x.f); SERIES3B[1].ds.label = tl+'金融債殖利率%';
+    // 選了年期時，各點都畫出來（成交較零散）
+    SERIES3B[0].ds.pointRadius = SEL3T==='all' ? pr : 2.5;
     const shown = SERIES3B.filter(s=>!SEL3B.size || SEL3B.has(s.k));
     // 利差跟著所選的殖利率：只選公司債 → 公司債利差；只選金融債 → 金融債利差；兩者都選或都沒選 → 合計利差
     const hasC = shown.some(s=>s.k==='c'), hasF = shown.some(s=>s.k==='f');
     const rpKey = hasC && !hasF ? 'rpC' : hasF && !hasC ? 'rpF' : 'rp';
     const rpDs = SERIES3B[2].ds;
     rpDs.data = ys.map(x=>x[rpKey]);
-    rpDs.label = (rpKey==='rpC' ? '公司債利差' : rpKey==='rpF' ? '金融債利差' : '公司債＋金融債利差') + ' bp（右軸）';
-    rpDs.pointRadius = rpKey==='rpF' ? 2.5 : pr;
+    rpDs.label = tl + (rpKey==='rpC' ? '公司債利差' : rpKey==='rpF' ? '金融債利差' : '公司債＋金融債利差') + ' bp（右軸）';
+    rpDs.pointRadius = rpKey==='rpF' || SEL3T!=='all' ? 2.5 : pr;
     const useY = shown.some(s=>s.k!=='rp'), useY2 = shown.some(s=>s.k==='rp');
     chart('c3b', {type:'line', data:{labels:G.map(g=>g.key), datasets:shown.map(s=>s.ds)},
       options:{scales:{x:{ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:16},grid:{display:false}},
@@ -845,6 +854,11 @@ function renderT3(){
         else { const v = b.dataset.v; SEL3B.has(v) ? SEL3B.delete(v) : SEL3B.add(v); if(SEL3B.size===SERIES3B.length) SEL3B.clear(); }
         drawYS();
       };
+    });
+    document.querySelectorAll('#seg3t button').forEach(b=>{
+      const v = b.dataset.v==='all' ? 'all' : +b.dataset.v;
+      b.classList.toggle('on', v===SEL3T);
+      b.onclick = ()=>{ SEL3T = v; drawYS(); };
     });
   };
   drawYS();
@@ -866,6 +880,9 @@ function renderT3(){
 let SEL3 = null;
 // government-bond trades of the tenor picked in the per-tenor summary: opened right under its row (newest first)
 let SEL2 = null;
+let SEL3T = 'all';         // 公司債/金融債 殖利率與利差圖的年期（剩餘年期分組；'all' = 全部年期）
+// 公司債/金融債的剩餘年期分組：1、2、3、5、7、10、15（15 = 15 年以上）
+const corpBucket = dy => dy==null ? null : dy<=1.5 ? 1 : dy<=2.5 ? 2 : dy<=4 ? 3 : dy<=6 ? 5 : dy<=8.5 ? 7 : dy<=12.5 ? 10 : 15;
 const SEL3B = new Set();   // 公司債/金融債 殖利率與利差圖的項目選取（空 = 全部）
 const SEL2B = new Set();   // 指標公債走勢圖的年期選取（空 = 全部）
 function openRec2(el, all, ncol){
