@@ -369,7 +369,7 @@ body.pdf-mode .chartbox{height:280px}
   <section class="tab" id="t6">
     <div class="card">
       <h2>市場發行金額（過去 5 年）</h2>
-      <p class="note" id="q6issNote">依櫃買中心「上櫃債券發行金額月報表」逐檔加總（新台幣計價），單位：億元。</p>
+      <p class="note" id="q6issNote">依櫃買中心「上櫃債券發行金額月報表」逐檔加總（新台幣計價），單位：億元。點選公債、金融債或公司債時，直條改依原發行年期分段。</p>
       <div class="seg" data-for="iss"><button class="on" data-v="all">全部</button><button data-v="G">公債</button><button data-v="F">金融債</button><button data-v="C">公司債</button></div>
       <div class="chartbox"><canvas id="c6iss"></canvas></div>
       <div class="tw" id="tb6iss"></div>
@@ -1047,9 +1047,21 @@ const stackTotals = {id:'stackTotals', afterDatasetsDraw(ch){
     ctx.fillText(Math.round(tot).toLocaleString('zh-TW'), ch.getDatasetMeta(vis[0]).data[i].x, top - 4);
   }
   ctx.restore(); }};
-function stackChart(id, years, labelOf, sums, only){
+// 單選一種債券時，直條依「原發行年期」分段；主要年期各自一段，其餘歸「其他」，99 年以上（永續）或無年期歸「無到期日」
+const TERM_MAIN = {G:[2,5,7,10,15,20,30], C:[2,3,5,7,10,15], F:[2,3,5,7,10,15]};
+// 同一年期在各圖固定同色
+const TERM_COLOR = {'2年':'#9ecae1','3年':'#59a14f','5年':'#4e79a7','7年':'#edc948','10年':'#f28e2b','15年':'#e15759','20年':'#76b7b2','30年':'#b07aa1','其他':'#bab0ac','無到期日':'#9c755f'};
+const termBucket = (t, term) => { if(term==null || term>=99) return '無到期日'; const r = Math.round(term); return TERM_MAIN[t].includes(r) && Math.abs(term-r)<0.05 ? r+'年' : '其他'; };
+const termOrder = t => [...TERM_MAIN[t].map(n=>n+'年'), '其他', '無到期日'];
+function stackChart(id, years, labelOf, sums, only, byTerm){
   const types = only && only!=='all' ? [only] : TYPE_ORDER;
-  chart(id, {type:'bar', plugins:[stackTotals], data:{labels:years.map(labelOf), datasets:types.map(t=>({label:TYPE_NAME[t], data:years.map(y=>sums[y][t]/100), backgroundColor:typeColor(t), stack:'s'}))},
+  let datasets;
+  if(types.length===1 && byTerm){
+    const t = types[0], order = termOrder(t);
+    datasets = order.map((b,i)=>({label:b, data:years.map(y=>((byTerm[y][t]||{})[b]||0)/100), backgroundColor:TERM_COLOR[b], stack:'s'}))
+      .filter(d=>d.data.some(v=>v>0));
+  } else datasets = types.map(t=>({label:TYPE_NAME[t], data:years.map(y=>sums[y][t]/100), backgroundColor:typeColor(t), stack:'s'}));
+  chart(id, {type:'bar', plugins:[stackTotals], data:{labels:years.map(labelOf), datasets},
     options:{layout:{padding:{top:22}}, scales:{x:{stacked:true,ticks:{color:css('--muted')},grid:{display:false}},y:{stacked:true,title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
 }
 function sumTable(el, years, labelOf, sums){
@@ -1066,14 +1078,14 @@ let SEL6 = {issuer:null, kind:null, year:null};
 function renderT6(){
   if(!ISS){ $('q6issNote').textContent = '找不到發行／到期資料（data/issue.js）。'; return; }
   // 1) market issuance by year
-  const iss = {}; ISS_YEARS.forEach(y=>iss[y]={G:0,F:0,C:0});
-  ISS.issued.forEach(r=>{ const y = +String(r[5]).slice(0,4); if(iss[y] && r[7]) iss[y][r[1]] += r[7]; });
-  stackChart('c6iss', ISS_YEARS, issYearLabel, iss, SEG6.iss); sumTable($('tb6iss'), ISS_YEARS, issYearLabel, iss);
+  const iss = {}, issT = {}; ISS_YEARS.forEach(y=>{ iss[y]={G:0,F:0,C:0}; issT[y]={G:{},F:{},C:{}}; });
+  ISS.issued.forEach(r=>{ const y = +String(r[5]).slice(0,4); if(iss[y] && r[7]){ iss[y][r[1]] += r[7]; const b = termBucket(r[1], r[6]), m = issT[y][r[1]]; m[b] = (m[b]||0) + r[7]; } });
+  stackChart('c6iss', ISS_YEARS, issYearLabel, iss, SEG6.iss, issT); sumTable($('tb6iss'), ISS_YEARS, issYearLabel, iss);
   // 2) market maturities by year
-  const mat = {}; MAT_YEARS.forEach(y=>mat[y]={G:0,F:0,C:0});
-  ISS.out.forEach(o=>payments(o).forEach(p=>{ const y = +p.date.slice(0,4); if(mat[y]) mat[y][o[1]] += p.amt; }));
-  stackChart('c6mat', MAT_YEARS, matYearLabel, mat, SEG6.mat); sumTable($('tb6mat'), MAT_YEARS, matYearLabel, mat);
-  $('q6matNote').textContent = `依櫃買中心「流通在外餘額月報表」（${ISS.outMonth}）計算，單位：億元。以流通在外餘額計，分期還本的債券依還本方式拆到各年度；無到期日的債券不列入。`;
+  const mat = {}, matT = {}; MAT_YEARS.forEach(y=>{ mat[y]={G:0,F:0,C:0}; matT[y]={G:{},F:{},C:{}}; });
+  ISS.out.forEach(o=>payments(o).forEach(p=>{ const y = +p.date.slice(0,4); if(mat[y]){ mat[y][o[1]] += p.amt; const b = termBucket(o[1], o[6]), m = matT[y][o[1]]; m[b] = (m[b]||0) + p.amt; } }));
+  stackChart('c6mat', MAT_YEARS, matYearLabel, mat, SEG6.mat, matT); sumTable($('tb6mat'), MAT_YEARS, matYearLabel, mat);
+  $('q6matNote').textContent = `依櫃買中心「流通在外餘額月報表」（${ISS.outMonth}）計算，單位：億元。以流通在外餘額計，分期還本的債券依還本方式拆到各年度；無到期日的債券不列入。點選公債、金融債或公司債時，直條改依原發行年期分段。`;
   // 5) guarantor banks
   const sel = $('q6bank');
   if(sel.options.length <= 1){
