@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>臺幣債券分析</title>
 <script src="data/data.js"></script>
+<script src="data/issue.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
@@ -16,6 +17,7 @@
   --th-bg:#eef1f5; --zebra:#f8f9fb; --line-strong:#cfd5de;
   --hot-bg:#e3ebf5; --cold-bg:#eef0f3; --sub-line:#e2c38a;
   --sec:#3f51a3; --sec-bg:#eef0fa; --sec-line:#b8c0e4;
+  --q-g:#1e4f8a; --q-f:#e8891c; --q-c:#2e9e6a;
   --rec-bg:#eaf1fa; --mkt-e-bg:#f5f8fd; --mkt-o-bg:#f1f9f8; --mkt-o-tag:#dcefed;
 }
 @media (prefers-color-scheme: dark){
@@ -26,7 +28,7 @@
     --corp:#4fbfb6; --fin:#8f9ce0; --up:#ff6b6b; --down:#69db7c; --sub:#e9b955; --sub-bg:rgba(233,185,85,.10);
     --th-bg:#1f2834; --zebra:#1b232e; --line-strong:#3a4554;
     --hot-bg:#1d2c40; --cold-bg:#252d38; --sub-line:#7a6232;
-    --sec:#9fabe8; --sec-bg:rgba(143,156,224,.12); --sec-line:#3d4878;
+    --sec:#9fabe8; --sec-bg:rgba(143,156,224,.12); --sec-line:#3d4878; --q-g:#6ea0e0; --q-f:#f2a64a; --q-c:#5cc493;
     --rec-bg:#1a2638; --mkt-e-bg:#1b2433; --mkt-o-bg:#18292a; --mkt-o-tag:#1d3533;
   }
 }
@@ -37,7 +39,7 @@
   --corp:#4fbfb6; --fin:#8f9ce0; --up:#ff6b6b; --down:#69db7c; --sub:#e9b955; --sub-bg:rgba(233,185,85,.10);
   --th-bg:#1f2834; --zebra:#1b232e; --line-strong:#3a4554;
   --hot-bg:#1d2c40; --cold-bg:#252d38; --sub-line:#7a6232;
-  --sec:#9fabe8; --sec-bg:rgba(143,156,224,.12); --sec-line:#3d4878;
+  --sec:#9fabe8; --sec-bg:rgba(143,156,224,.12); --sec-line:#3d4878; --q-g:#6ea0e0; --q-f:#f2a64a; --q-c:#5cc493;
   --rec-bg:#1a2638; --mkt-e-bg:#1b2433; --mkt-o-bg:#18292a; --mkt-o-tag:#1d3533;
 }
 *{box-sizing:border-box}
@@ -96,7 +98,12 @@ tbody tr:hover td{background:var(--accent-soft)}
 .tag.sub{background:var(--sub-bg);color:var(--sub);border:1px solid var(--sub-line);margin-left:6px}
 .tag.sec{background:var(--sec-bg);color:var(--sec);border:1px solid var(--sec-line);margin-left:6px}
 td .rt{color:var(--muted);font-size:12px;font-weight:400}
-td .rt2{font-size:12px;color:var(--sec);margin-top:1px}
+td .who{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:0 5px;margin-left:4px;font-weight:400}
+td .who.g{color:var(--sec);border-color:var(--sec-line);background:var(--sec-bg)}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;margin:0 0 10px}
+.seg button{font:inherit;font-size:13px;border:0;border-left:1px solid var(--line-strong);background:var(--card);color:var(--ink);padding:5px 14px;cursor:pointer}
+.seg button:first-child{border-left:0}
+.seg button.on{background:var(--accent);color:#fff;font-weight:600}
 h3.sub-h{font-size:14px;margin:14px 0 6px;padding-left:8px;border-left:3px solid var(--accent)}
 .tag.unk{background:transparent;color:var(--muted);border:1px dashed var(--line);font-weight:400;margin-left:6px}
 tbody tr.subrow td{background:var(--sub-bg)}
@@ -208,6 +215,7 @@ body.pdf-mode .chartbox{height:280px}
           <option value="6">近 6 個月</option>
           <option value="12">近 1 年</option>
           <option value="36">近 3 年</option>
+          <option value="60">近 5 年</option>
           <option value="custom">自訂區間…</option>
         </select>
       </label>
@@ -222,10 +230,11 @@ body.pdf-mode .chartbox{height:280px}
   </div>
   <nav id="nav">
     <button data-t="t1" class="on">總覽</button>
-    <button data-t="t2">公債：指標券／非指標券</button>
+    <button data-t="t2">公債</button>
     <button data-t="t3">公司債/金融債</button>
     <button data-t="t4">個別債券查詢</button>
     <button data-t="t5">成交明細</button>
+    <button data-t="t6">發行/到期概況</button>
   </nav>
 </header>
 
@@ -289,10 +298,10 @@ body.pdf-mode .chartbox{height:280px}
       </div>
       <div class="chartbox"><canvas id="c2a"></canvas></div>
     </div>
-    <div class="grid2">
+    <div>
       <div class="card">
         <h2>區間內各年期指標券／非指標券統計</h2>
-        <p class="note">依歷史區間加總，成交面額單位：億元</p>
+        <p class="note">依歷史區間加總，成交面額單位：億元。點選任一年期，會在該列下方展開這個年期在區間內的成交明細（藍色底區塊；等殖、處所以不同顏色標示），再點一次即可收合。</p>
         <div class="tw" id="tbGovHist"></div>
       </div>
       <div class="card">
@@ -308,7 +317,7 @@ body.pdf-mode .chartbox{height:280px}
     <div class="kpis" id="kpi3"></div>
     <div class="card">
       <h2>當日公司債/金融債成交明細</h2>
-      <p class="note">利差＝處所行情表公布的「與公債殖利率之差異點」（bp）。成交面額單位：億元。債券評等取自公開資訊觀測站：有債券本身的評等就顯示債券評等，沒有則顯示發行公司評等並註明「（發行人）」；有擔保的債券另在下一行顯示擔保行的信評。點欄位名稱可依評等高低排序（有擔保的債券依擔保行信評排序）。</p>
+      <p class="note">利差＝處所行情表公布的「與公債殖利率之差異點」（bp）。成交面額單位：億元。評等取自公開資訊觀測站，分兩欄：「債券評等」為債券本身的評等，沒有則顯示「--」；「發行人/保證人評等」對有擔保債券顯示保證人（擔保行）的評等，其餘顯示發行人的評等，並以標籤註明。點欄位名稱可依評等高低排序。</p>
       <p class="legend"><span class="tag sub" style="margin-left:0">次順位</span> 底色標示的是次順位債券，依公開資訊觀測站登載的債券全名與擔保情形判斷。<span class="tag unk">順位未確認</span> 表示該債券已到期下櫃，無法查詢。<span class="tag sec">O銀保</span> 表示有擔保債券，標籤為擔保機構簡稱加「保」（例如第一商業銀行保證＝一銀保；滑鼠移到標籤上可看擔保機構全名；查不到擔保機構時顯示「有擔」），依公開資訊觀測站資料判斷；與次順位同時符合時兩個標籤並列。</p>
       <div class="tw scroll" id="tbCorpDay"></div>
     </div>
@@ -350,6 +359,48 @@ body.pdf-mode .chartbox{height:280px}
   </section>
 
   <!-- 5 明細 -->
+  <!-- 6 查詢：發行 / 到期 / 發行公司 / 保證銀行 -->
+  <section class="tab" id="t6">
+    <div class="card">
+      <h2>市場發行金額（過去 5 年）</h2>
+      <p class="note" id="q6issNote">依櫃買中心「上櫃債券發行金額月報表」逐檔加總（新台幣計價），單位：億元。</p>
+      <div class="seg" data-for="iss"><button class="on" data-v="all">全部</button><button data-v="G">公債</button><button data-v="F">金融債</button><button data-v="C">公司債</button></div>
+      <div class="chartbox"><canvas id="c6iss"></canvas></div>
+      <div class="tw" id="tb6iss"></div>
+    </div>
+    <div class="card">
+      <h2>市場到期金額（未來 5 年）</h2>
+      <p class="note" id="q6matNote">依櫃買中心「流通在外餘額月報表」計算，單位：億元。以流通在外餘額計，分期還本的債券依還本方式拆到各年度；無到期日的債券不列入。</p>
+      <div class="seg" data-for="mat"><button class="on" data-v="all">全部</button><button data-v="G">公債</button><button data-v="F">金融債</button><button data-v="C">公司債</button></div>
+      <div class="chartbox"><canvas id="c6mat"></canvas></div>
+      <div class="tw" id="tb6mat"></div>
+    </div>
+    <div class="card">
+      <h2>發行公司查詢</h2>
+      <p class="note">輸入發行公司的統一編號（也可輸入公司名稱或股票代號），查詢過去 5 年發行金額與未來 5 年到期金額。點選圖上的年度，下方會列出該年度的債券與發行條件。統一編號取自經濟部商工登記資料。</p>
+      <div class="row">
+        <input type="text" id="q6co" placeholder="統一編號，例如 22099131（或公司名稱、股票代號）" style="width:340px;max-width:100%">
+        <button class="btn" id="b6co">查詢</button>
+      </div>
+      <div id="q6coInfo" class="note"></div>
+      <div id="q6coBody" style="display:none">
+        <div class="grid2">
+          <div><h3 class="sub-h">過去 5 年發行金額（億元）</h3><div class="chartbox" style="height:240px"><canvas id="c6coIss"></canvas></div></div>
+          <div><h3 class="sub-h">未來 5 年到期金額（億元）</h3><div class="chartbox" style="height:240px"><canvas id="c6coMat"></canvas></div></div>
+        </div>
+        <h3 class="sub-h" id="q6coSelTitle">點選上方圖表的年度，查看該年度的債券</h3>
+        <div class="tw scroll" id="tb6co"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>保證銀行查詢</h2>
+      <p class="note">選取保證銀行，列出該銀行保證、目前流通在外的債券。擔保機構取自公開資訊觀測站。</p>
+      <div class="row"><label class="c">保證銀行 <select id="q6bank"><option value="">請選擇…</option></select></label></div>
+      <div id="q6bankInfo" class="note"></div>
+      <div class="tw scroll" id="tb6bank"></div>
+    </div>
+  </section>
+
   <section class="tab" id="t5">
     <div class="card long">
       <h2>當日完整成交明細</h2>
@@ -428,22 +479,29 @@ const secLabel = code => !SECURED.has(code) ? '' : (GUARS[code] ? guarShort(GUAR
 const secTag = code => { const s = secLabel(code); return s ? `<span class="tag sec" title="${esc(GUARS[code] ? '擔保機構：' + GUARS[code] : '有擔保債券')}">${esc(s)}</span>` : ''; };
 const secText = r => (r.type==='公司債'||r.type==='金融債') ? (SECURED.has(r.code) ? secLabel(r.code) : r.subUnknown ? '未確認' : '否') : '';
 const nameCell = (v,r) => esc(v) + subTag(r) + secTag(r.code);
-// credit rating from MOPS: [grade, agency, date, issuerFlag] — the bond's own rating, else the issuer's (marked 發行人)
-const RATINGS = DATA.ratings || {};
-// secured bonds also show the guarantor's rating on a second line: 擔保行（一銀）twAAA 中華信評
-const GRATINGS = DATA.guarRatings || {};
+// credit ratings from MOPS, shown in two columns:
+//   債券評等            : the bond's own rating, "--" when it has none
+//   發行人/保證人評等    : the guarantor's rating for secured bonds (marked 保證人), otherwise the issuer's (marked 發行人)
+const RATINGS = DATA.ratings2 || {};         // code -> [bond grade, agency, date, issuer grade, agency, date]
+const GRATINGS = DATA.guarRatings || {};     // code -> [guarantor grade, agency, date]
 const agShort = s => String(s||'').replace(/[（(〈].*$/,'').trim();
-const ratingCell = (v,r) => {
-  const x = RATINGS[r.code], g = SECURED.has(r.code) ? GRATINGS[r.code] : null;
-  let h = x ? `<b>${esc(x[0])}</b> <span class="rt">${esc(agShort(x[1]))}${x[3]?'（發行人）':''}</span>` : '<span class="dim">–</span>';
-  if(g) h += `<div class="rt2">擔保行（${esc(GUARS[r.code] ? guarShort(GUARS[r.code]) : '')}）<b>${esc(g[0])}</b> <span class="rt">${esc(agShort(g[1]))}</span></div>`;
-  return h; };
+const NO_RT = '<span class="dim">--</span>';
+const bondRating = r => { const x = RATINGS[r.code]; return x && x[0] ? [x[0], x[1]] : null; };
+const otherRating = r => {   // -> [grade, agency, who]
+  const g = SECURED.has(r.code) ? GRATINGS[r.code] : null;
+  if(g && g[0]) return [g[0], g[1], '保證人' + (GUARS[r.code] ? '（' + guarShort(GUARS[r.code]) + '）' : '')];
+  const x = RATINGS[r.code]; return x && x[3] ? [x[3], x[4], '發行人'] : null; };
+const bondRatingCell = (v,r) => { const b = bondRating(r); return b ? `<b>${esc(b[0])}</b> <span class="rt">${esc(agShort(b[1]))}</span>` : NO_RT; };
+const otherRatingCell = (v,r) => { const o = otherRating(r); if(!o) return NO_RT;
+  return `<b>${esc(o[0])}</b> <span class="rt">${esc(agShort(o[1]))}</span> <span class="who${o[2].startsWith('保證人')?' g':''}">${esc(o[2])}</span>`; };
 const RT_SCALE = ['AAA','AA+','AA','AA-','A+','A','A-','BBB+','BBB','BBB-','BB+','BB','BB-','B+','B','B-','CCC','CC','C','D'];
 const RT_MOODY = {Aaa:'AAA',Aa1:'AA+',Aa2:'AA',Aa3:'AA-',A1:'A+',A2:'A',A3:'A-',Baa1:'BBB+',Baa2:'BBB',Baa3:'BBB-',Ba1:'BB+',Ba2:'BB',Ba3:'BB-',B1:'B+',B2:'B',B3:'B-'};
-const ratingRank = r => {   // higher = better, for sorting; a secured bond ranks by its guarantor's rating
-  const x = (SECURED.has(r.code) && GRATINGS[r.code]) || RATINGS[r.code]; if(!x) return null;
-  let g = String(x[0]).replace(/\(twn\)|\.tw|^tw/gi,'').trim(); g = RT_MOODY[g] || g.toUpperCase();
+const gradeRank = grade => { if(!grade) return null;   // higher = better, for sorting
+  let g = String(grade).replace(/\(twn\)|\.tw|^tw/gi,'').trim(); g = RT_MOODY[g] || g.toUpperCase();
   const i = RT_SCALE.indexOf(g); return i < 0 ? null : 100 - i; };
+const RATING_COLS = [
+  {k:'rb',t:'債券評等',l:1,f:bondRatingCell,sv:r=>{ const b = bondRating(r); return b ? gradeRank(b[0]) : null; }},
+  {k:'ri',t:'發行人/保證人評等',l:1,f:otherRatingCell,sv:r=>{ const o = otherRating(r); return o ? gradeRank(o[0]) : null; }}];
 const subRow = r => r.sub ? 'subrow' : '';
 const subText = r => (r.type==='公司債'||r.type==='金融債') ? (r.sub ? '是' : r.subUnknown ? '未確認' : '否') : '';
 
@@ -630,7 +688,7 @@ function renderT1(){
   // dy = remaining years to maturity on the latest trade day in the period (R is in date order)
   const by = {}; R.forEach(r=>{ const x = by[r.code] || (by[r.code]={code:r.code,name:r.name,type:r.type,face:0,fE:0,fO:0,dy:null}); x.face+=r.face||0; x[r.mkt==='E'?'fE':'fO']+=r.face||0; if(r.dy!=null) x.dy = r.dy; });
   Object.values(by).forEach(x=>{ if(x.type==='公司債'||x.type==='金融債'){ x.sub=SUB.has(x.code); x.subUnknown=!SUB_CHECKED.has(x.code); } });
-  table($('tbTop'), [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'dy',t:'年期(剩餘年)',c:1,f:v=>v==null?'–':fN(v,2)+' 年'},{k:'type',t:'種類',l:1},{k:'fE',t:'等殖',f:fY},{k:'fO',t:'處所',f:fY},{k:'face',t:'合計',f:fY}],
+  table($('tbTop'), [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'dy',t:'年期(剩餘年)',c:1,f:v=>v==null?'–':fN(v,2)+' 年'},...RATING_COLS,{k:'type',t:'種類',l:1},{k:'fE',t:'等殖',f:fY},{k:'fO',t:'處所',f:fY},{k:'face',t:'合計',f:fY}],
     Object.values(by), {sort:'face', limit:10, rowClass:subRow});
 
   const G = groupKeys(rangeDays());
@@ -686,11 +744,16 @@ function renderT2(){
   const all = days.flatMap(d=>recs(d).filter(r=>r.type==='公債'));
   const hrows = GOV_TENORS.map(t=>{
     const g = all.filter(r=>r.tenor===t), h=g.filter(r=>r.hot), c=g.filter(r=>!r.hot);
-    return {t:t+'年期', h:sum(h), c:sum(c), hd:new Set(h.map(r=>r.d)).size, cd:new Set(c.map(r=>r.d)).size, share: TENORS.includes(t) && sum(g)? sum(h)/sum(g)*100 : null};
+    return {ten:t, t:t+'年期', h:sum(h), c:sum(c), hd:new Set(h.map(r=>r.d)).size, cd:new Set(c.map(r=>r.d)).size, share: TENORS.includes(t) && sum(g)? sum(h)/sum(g)*100 : null};
   });
   const tt = {_sum:true,t:'合計',h:sum(hrows,'h'),c:sum(hrows,'c'),hd:new Set(all.filter(r=>r.hot).map(r=>r.d)).size,cd:new Set(all.filter(r=>!r.hot).map(r=>r.d)).size};
   tt.share = (tt.h+tt.c)? tt.h/(tt.h+tt.c)*100 : null; hrows.push(tt);
-  table($('tbGovHist'), [{k:'t',t:'年期',l:1},{k:'h',t:'指標券面額',f:fY},{k:'hd',t:'指標券有成交天數',f:fI},{k:'c',t:'非指標券面額',f:fY},{k:'cd',t:'非指標券有成交天數',f:fI},{k:'share',t:'指標券占比',f:v=>v==null?'–':v.toFixed(1)+'%'}], hrows, {noSort:true});
+  const histCols = [{k:'t',t:'年期',l:1},{k:'h',t:'指標券面額',f:fY},{k:'hd',t:'指標券有成交天數',f:fI},{k:'c',t:'非指標券面額',f:fY},{k:'cd',t:'非指標券有成交天數',f:fI},{k:'share',t:'指標券占比',f:v=>v==null?'–':v.toFixed(1)+'%'}];
+  const drawHist = () => table($('tbGovHist'), histCols, hrows, {noSort:true,
+    rowClass:r=>r.ten!=null && r.ten===SEL2 ? 'sel' : '',
+    onClick:r=>{ SEL2 = SEL2===r.ten ? null : r.ten; drawHist(); },
+    after:el=>openRec2(el, all, histCols.length)});
+  drawHist();
 
   const pal = [css('--cold'), css('--corp'), css('--accent'), css('--fin'), css('--sub')];
   chart('c2b', {type:'line', data:{labels:days.map(d=>d.d), datasets:TENORS.map((t,i)=>({label:t+'年', data:days.map(d=>{ const b=(d.b||[]).find(x=>x[0]===t); return b? b[2] : null; }), borderColor:pal[i], backgroundColor:pal[i], pointRadius:0, borderWidth:1.6, spanGaps:true}))},
@@ -712,7 +775,7 @@ function renderT3(){
     + kpi('金融債 等殖／處所', fY(sum(F.filter(r=>r.mkt==='E')))+' / '+fY(sum(F.filter(r=>r.mkt==='O'))))
     + kpi('處所加權平均利差', rp==null?'–':rp.toFixed(1), 'bp');
   table($('tbCorpDay'), [
-    {k:'type',t:'種類',l:1},{k:'mkt',t:'市場',l:1,f:mktName},{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'rating',t:'債券評等',l:1,f:ratingCell,sv:ratingRank},{k:'dy',t:'剩餘年限',f:v=>fN(v,2)},
+    {k:'type',t:'種類',l:1},{k:'mkt',t:'市場',l:1,f:mktName},{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},...RATING_COLS,{k:'dy',t:'剩餘年限',f:v=>fN(v,2)},
     {k:'yAvg',t:'平均殖利率%',f:v=>fN(v)},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},{k:'rp',t:'利差(bp)',f:v=>fN(v,2)},{k:'pAvg',t:'平均百元價',f:v=>fN(v)},
     {k:'face',t:'成交面額(億)',f:fY},{k:'count',t:'筆數',f:fI}], R, {sort:'face', rowClass:subRow});
 
@@ -734,8 +797,10 @@ function renderT3(){
 
   const by = {};
   days.forEach(d=>recs(d).forEach(r=>{ if(r.type==='公債') return; const x = by[r.code] || (by[r.code]={code:r.code,name:r.name,type:r.type,face:0,days:new Set(),ys:[]}); x.face+=r.face||0; x.days.add(r.d); x.ys.push(r); x.name=r.name; }));
-  const top = Object.values(by).map(x=>({code:x.code,name:x.name,type:x.type,face:x.face,n:x.days.size,y:wavg(x.ys,'yAvg'),sub:SUB.has(x.code),subUnknown:!SUB_CHECKED.has(x.code)}));
-  const topCols = [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'rating',t:'債券評等',l:1,f:ratingCell,sv:ratingRank},{k:'type',t:'種類',l:1},{k:'n',t:'成交天數',f:fI},{k:'y',t:'加權殖利率%',f:v=>fN(v)},{k:'face',t:'面額(億)',f:fY}];
+  // remaining years = as of the bond's latest trade in the period
+  const lastDy = ys => { let d = '', v = null; ys.forEach(r=>{ if(r.dy!=null && r.d >= d){ d = r.d; v = r.dy; } }); return v; };
+  const top = Object.values(by).map(x=>({code:x.code,name:x.name,type:x.type,face:x.face,n:x.days.size,y:wavg(x.ys,'yAvg'),dy:lastDy(x.ys),sub:SUB.has(x.code),subUnknown:!SUB_CHECKED.has(x.code)}));
+  const topCols = [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},...RATING_COLS,{k:'dy',t:'剩餘年期',f:v=>v==null?'–':fN(v,2)+' 年'},{k:'type',t:'種類',l:1},{k:'n',t:'成交天數',f:fI},{k:'y',t:'加權殖利率%',f:v=>fN(v)},{k:'face',t:'面額(億)',f:fY}];
   const drawTop = () => table($('tbCorpTop'), topCols, top,
     {sort:'face', limit:20, rowClass:r=>[subRow(r), r.code===SEL3?'sel':''].join(' ').trim(),
      onClick:r=>{ SEL3 = SEL3===r.code ? null : r.code; drawTop(); },
@@ -745,6 +810,23 @@ function renderT3(){
 
 // trade records of the bond picked in the top-20 table: opened right under its row (follows the history range; newest first)
 let SEL3 = null;
+// government-bond trades of the tenor picked in the per-tenor summary: opened right under its row (newest first)
+let SEL2 = null;
+function openRec2(el, all, ncol){
+  if(SEL2==null) return;
+  const tr = el.querySelector(':scope > table > tbody > tr.sel');
+  if(!tr) return;
+  const rows = all.filter(r=>r.tenor===SEL2);
+  const det = document.createElement('tr');
+  det.className = 'rec3';
+  det.innerHTML = `<td colspan="${ncol}"><div class="rec3box"><div class="rhead"><b>${SEL2}年期 成交明細</b><span class="note">${esc(rangeLabel())}｜${rows.length} 筆，合計面額 ${fY(sum(rows))} 億元（指標券 ${fY(sum(rows.filter(r=>r.hot)))}、非指標券 ${fY(sum(rows.filter(r=>!r.hot)))}）｜再點一次該列即可收合</span></div><div class="tw scroll"></div></div></td>`;
+  tr.after(det);
+  const mkTag = v => `<span class="tag mkt-${v}">${MKT[v]}</span>`;
+  table(det.querySelector('.tw'), [{k:'d',t:'成交日期',l:1},{k:'mkt',t:'市場',l:1,f:mkTag},{k:'hot',t:'指標/非指標',l:1,f:(v,r)=>tag(r),sv:r=>r.hot?1:0},
+    {k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1},{k:'dy',t:'剩餘年限',f:v=>fN(v,2)},{k:'yAvg',t:'平均殖利率%',f:v=>fN(v)},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},
+    {k:'face',t:'成交面額(億)',f:fY},{k:'count',t:'筆數',f:fI}], rows, {sort:'d', rowClass:r=>'mkt-'+r.mkt});
+}
+
 function openRec3(el, days, ncol){
   if(!SEL3) return;
   const tr = el.querySelector(':scope > table > tbody > tr.sel');
@@ -864,7 +946,149 @@ async function saveFile(filename, blob){
 }
 
 // ---------- wiring ----------
-const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:renderT4, t5:renderT5};
+// ================= TAB 6 查詢 =================
+// ISSUE_DATA: issued   = [code, type G/C/F, name, issuerIdx, coupon, issueDate, termYears, issueAmt(million), maturityDate]
+//             out      = [code, type, name, issuerIdx, coupon, issueDate, termYears, issueAmt, outstanding(million), redemptionNote, maturityDate]
+//             issuers  = [fullName, taxId, stockCode]
+const ISS = window.ISSUE_DATA || null;
+const TYPE_ORDER = ['G','F','C'], TYPE_NAME = {G:'公債', F:'金融債', C:'公司債'};
+// clearly separated hues for the three bond types: navy / orange / green
+const typeColor = t => t==='G' ? css('--q-g') : t==='F' ? css('--q-f') : css('--q-c');
+const SEG6 = {iss:'all', mat:'all'};
+const fM = v => v==null||isNaN(v) ? '–' : (v/100).toLocaleString('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2});   // million -> 億
+const pad2 = n => String(n).padStart(2,'0');
+const addMonthsIso = (iso, months) => { if(!iso) return null; const [y,m,d] = iso.split('-').map(Number); const tot = y*12 + (m-1) + months;
+  const ny = Math.floor(tot/12), nm = tot%12 + 1, dim = new Date(ny, nm, 0).getDate(); return `${ny}-${pad2(nm)}-${pad2(Math.min(d, dim))}`; };
+const matOf = (idate, term, mat) => mat || (term!=null && idate ? addMonthsIso(idate, Math.round(term*12)) : null);
+// cash-flow of an outstanding bond: [{date, amt}] — amortising bonds ("滿 3 年起每 1 年 20% 30% 50%") spread over their schedule
+function payments(o){
+  const [code,t,name,ii,cpn,idate,term,amt,bal,note,mat] = o;
+  const m = matOf(idate, term, mat); if(!m || !bal) return [];
+  const a = String(note||'').match(/滿\s*([\d.]+)\s*年起每\s*([\d.]+)\s*年\s*((?:[\d.]+\s*%\s*)+)/);
+  if(a){
+    const st = +a[1], step = +a[2], pcts = (a[3].match(/[\d.]+/g)||[]).map(Number);
+    const sched = pcts.map((p,k)=>({date:addMonthsIso(idate, Math.round((st + k*step)*12)), p})).filter(x=>x.date > ISS_OUT_END);
+    const tot = sched.reduce((s,x)=>s+x.p,0);
+    if(sched.length && tot>0) return sched.map(x=>({date:x.date, amt:bal*x.p/tot}));
+  }
+  return m > ISS_OUT_END ? [{date:m, amt:bal}] : [];
+}
+const ISS_OUT_END = ISS && ISS.outMonth ? addMonthsIso(ISS.outMonth + '-01', 1) : '0000';
+const Y0 = new Date().getFullYear();
+const ISS_YEARS = [Y0-4, Y0-3, Y0-2, Y0-1, Y0];
+const MAT_YEARS = [Y0, Y0+1, Y0+2, Y0+3, Y0+4, Y0+5];
+const lastIssueMonth = () => { let mx = ''; (ISS.issued||[]).forEach(r=>{ if(r[5] > mx) mx = r[5]; }); return mx; };
+const issYearLabel = y => { if(y!==Y0) return String(y); const lm = lastIssueMonth(); return lm && +lm.slice(0,4)===Y0 ? `${y}（1–${+lm.slice(5,7)}月）` : String(y); };
+const matYearLabel = y => y===Y0 && ISS.outMonth && +ISS.outMonth.slice(0,4)===Y0 ? `${y}（${+ISS.outMonth.slice(5,7)+1}–12月）` : String(y);
+function stackChart(id, years, labelOf, sums, only){
+  const types = only && only!=='all' ? [only] : TYPE_ORDER;
+  chart(id, {type:'bar', data:{labels:years.map(labelOf), datasets:types.map(t=>({label:TYPE_NAME[t], data:years.map(y=>sums[y][t]/100), backgroundColor:typeColor(t), stack:'s'}))},
+    options:{scales:{x:{stacked:true,ticks:{color:css('--muted')},grid:{display:false}},y:{stacked:true,title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+}
+function sumTable(el, years, labelOf, sums){
+  const rows = years.map(y=>({y:labelOf(y), G:sums[y].G, F:sums[y].F, C:sums[y].C, all:sums[y].G+sums[y].F+sums[y].C}));
+  rows.push({_sum:true, y:'合計', G:sum(rows,'G'), F:sum(rows,'F'), C:sum(rows,'C'), all:sum(rows,'all')});
+  table(el, [{k:'y',t:'年度',l:1},{k:'G',t:'公債',f:fM},{k:'F',t:'金融債',f:fM},{k:'C',t:'公司債',f:fM},{k:'all',t:'合計',f:fM}], rows, {noSort:true});
+}
+const bondObj = (code, extra) => Object.assign({code, sub:SUB.has(code), subUnknown:!SUB_CHECKED.has(code), type:{G:'公債',C:'公司債',F:'金融債'}[typeOfCode(code)]}, extra);
+const typeOfCode = c => c[0]==='A' ? 'G' : c[0]==='B' ? 'C' : 'F';
+const guarCol = {k:'guar',t:'擔保',l:1,f:(v,r)=>secTag(r.code)||'<span class="dim">無</span>',sv:r=>secLabel(r.code)||null};
+const subCol = {k:'sub',t:'次順位',c:1,f:(v,r)=>r.sub?'<span class="tag sub" style="margin-left:0">次順位</span>':(r.subUnknown?'<span class="dim">未確認</span>':''),sv:r=>r.sub?1:0};
+
+let SEL6 = {issuer:null, kind:null, year:null};
+function renderT6(){
+  if(!ISS){ $('q6issNote').textContent = '找不到發行／到期資料（data/issue.js）。'; return; }
+  // 1) market issuance by year
+  const iss = {}; ISS_YEARS.forEach(y=>iss[y]={G:0,F:0,C:0});
+  ISS.issued.forEach(r=>{ const y = +String(r[5]).slice(0,4); if(iss[y] && r[7]) iss[y][r[1]] += r[7]; });
+  stackChart('c6iss', ISS_YEARS, issYearLabel, iss, SEG6.iss); sumTable($('tb6iss'), ISS_YEARS, issYearLabel, iss);
+  // 2) market maturities by year
+  const mat = {}; MAT_YEARS.forEach(y=>mat[y]={G:0,F:0,C:0});
+  ISS.out.forEach(o=>payments(o).forEach(p=>{ const y = +p.date.slice(0,4); if(mat[y]) mat[y][o[1]] += p.amt; }));
+  stackChart('c6mat', MAT_YEARS, matYearLabel, mat, SEG6.mat); sumTable($('tb6mat'), MAT_YEARS, matYearLabel, mat);
+  $('q6matNote').textContent = `依櫃買中心「流通在外餘額月報表」（${ISS.outMonth}）計算，單位：億元。以流通在外餘額計，分期還本的債券依還本方式拆到各年度；無到期日的債券不列入。`;
+  // 5) guarantor banks
+  const sel = $('q6bank');
+  if(sel.options.length <= 1){
+    const cnt = {}; ISS.out.forEach(o=>{ const g = GUARS[o[0]]; if(g && SECURED.has(o[0])) cnt[g] = (cnt[g]||0) + 1; });
+    Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).forEach(g=>{ const op = document.createElement('option'); op.value = g; op.textContent = `${guarShort(g)}保（${g}，${cnt[g]} 檔）`; sel.appendChild(op); });
+  }
+  if(SEL6.issuer!=null) drawCompany();
+}
+
+// 3) & 4) issuer lookup
+function findIssuers(q){
+  q = q.trim(); if(!q) return [];
+  const norm = s => String(s||'').replace(/臺/g,'台');
+  return ISS.issuers.map((x,i)=>({i, name:x[0], tax:x[1], stock:x[2]})).filter(x=>
+    /^\d{8}$/.test(q) ? x.tax===q : /^\d{4,6}$/.test(q) ? x.stock===q : norm(x.name).includes(norm(q)));
+}
+function queryCompany(){
+  const q = $('q6co').value, hits = findIssuers(q);
+  $('q6coBody').style.display = 'none'; SEL6 = {issuer:null, kind:null, year:null};
+  if(!q.trim()){ $('q6coInfo').textContent = '請輸入統一編號、公司名稱或股票代號。'; return; }
+  if(!hits.length){ $('q6coInfo').textContent = '找不到符合的發行公司（過去 5 年沒有發行、目前也沒有流通在外的公司債／金融債）。'; return; }
+  // several names registered under one tax ID (e.g. a branch written two ways) are shown together
+  const taxes = [...new Set(hits.map(h=>h.tax).filter(Boolean))];
+  if(hits.length > 1 && taxes.length===1 && hits.every(h=>h.tax===taxes[0])){ SEL6.issuer = hits.map(h=>h.i); drawCompany(); return; }
+  if(hits.length > 1){
+    $('q6coInfo').innerHTML = `找到 ${hits.length} 家，請選擇：` + hits.slice(0,30).map(h=>`<button class="btn" style="margin:3px" data-i="${h.i}">${esc(h.name)}</button>`).join('');
+    $('q6coInfo').querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{ SEL6.issuer = +b.dataset.i; drawCompany(); });
+    return;
+  }
+  SEL6.issuer = hits[0].i; drawCompany();
+}
+function companyData(ids){
+  const set = new Set([].concat(ids));
+  const iss = {}, mat = {}; ISS_YEARS.forEach(y=>iss[y]=[]); MAT_YEARS.forEach(y=>mat[y]=[]);
+  ISS.issued.forEach(r=>{ if(!set.has(r[3])) return; const y = +String(r[5]).slice(0,4); if(iss[y]) iss[y].push(r); });
+  ISS.out.forEach(o=>{ if(!set.has(o[3])) return; payments(o).forEach(p=>{ const y = +p.date.slice(0,4); if(mat[y]) mat[y].push({o, amt:p.amt, date:p.date}); }); });
+  return {iss, mat};
+}
+function drawCompany(){
+  const ids = [].concat(SEL6.issuer), xs = ids.map(i=>ISS.issuers[i]), x = xs[0], cd = companyData(ids);
+  $('q6coInfo').innerHTML = `<b>${xs.map(v=>esc(v[0])).join('、')}</b>　統一編號：${esc(x[1]||'（商工登記查無）')}${x[2] ? '　代號：'+esc(x[2]) : ''}`;
+  $('q6coBody').style.display = '';
+  const pick = (kind, years) => (e, els) => { if(!els || !els.length) return; SEL6.kind = kind; SEL6.year = years[els[0].index]; drawCompanyTable(cd); };
+  chart('c6coIss', {type:'bar', data:{labels:ISS_YEARS.map(issYearLabel), datasets:[{label:'發行金額', data:ISS_YEARS.map(y=>cd.iss[y].reduce((s,r)=>s+(r[7]||0),0)/100), backgroundColor:css('--accent')}]},
+    options:{onClick:pick('iss', ISS_YEARS), onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:css('--muted')},grid:{display:false}},y:{ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+  chart('c6coMat', {type:'bar', data:{labels:MAT_YEARS.map(matYearLabel), datasets:[{label:'到期金額', data:MAT_YEARS.map(y=>cd.mat[y].reduce((s,p)=>s+p.amt,0)/100), backgroundColor:css('--corp')}]},
+    options:{onClick:pick('mat', MAT_YEARS), onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:css('--muted')},grid:{display:false}},y:{ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+  drawCompanyTable(cd);
+}
+function drawCompanyTable(cd){
+  const el = $('tb6co');
+  if(!SEL6.kind){ $('q6coSelTitle').textContent = '點選上方圖表的年度，查看該年度的債券'; el.innerHTML = ''; return; }
+  const base = [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'idate',t:'發行日',l:1},{k:'mat',t:'到期日',l:1,f:v=>v||'無到期日'},{k:'term',t:'年期',f:v=>v==null?'–':fN(v,2).replace(/\.?0+$/,'')+' 年'},{k:'cpn',t:'票面利率%',f:v=>fN(v,4)}];
+  const tail = [guarCol, subCol, ...RATING_COLS];
+  if(SEL6.kind==='iss'){
+    const rows = cd.iss[SEL6.year].map(r=>bondObj(r[0], {name:r[2], idate:r[5], term:r[6], cpn:r[4], amt:r[7], mat:matOf(r[5], r[6], r[8])}));
+    $('q6coSelTitle').textContent = `${issYearLabel(SEL6.year)} 發行的債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
+    table(el, base.concat([{k:'amt',t:'發行金額(億)',f:fM}], tail), rows, {sort:'idate', sortDir:1, rowClass:subRow});
+  } else {
+    const rows = cd.mat[SEL6.year].map(p=>{ const o = p.o; return bondObj(o[0], {name:o[2], idate:o[5], term:o[6], cpn:o[4], amt:o[7], bal:o[8], due:p.amt, ddate:p.date, mat:matOf(o[5], o[6], o[10])}); });
+    $('q6coSelTitle').textContent = `${matYearLabel(SEL6.year)} 到期的債券（${rows.length} 筆，當年到期合計 ${fM(sum(rows,'due'))} 億元）`;
+    table(el, base.concat([{k:'ddate',t:'還本日',l:1},{k:'due',t:'當年到期金額(億)',f:fM},{k:'bal',t:'流通在外(億)',f:fM},{k:'amt',t:'發行金額(億)',f:fM}], tail), rows, {sort:'ddate', sortDir:1, rowClass:subRow});
+  }
+}
+function drawBank(){
+  const g = $('q6bank').value, el = $('tb6bank');
+  if(!g){ $('q6bankInfo').textContent = ''; el.innerHTML = ''; return; }
+  const rows = ISS.out.filter(o=>GUARS[o[0]]===g && SECURED.has(o[0])).map(o=>{ const is = o[3]!=null ? ISS.issuers[o[3]] : null;
+    return bondObj(o[0], {name:o[2], issuer:is ? is[0] : '', idate:o[5], mat:matOf(o[5], o[6], o[10]), cpn:o[4], amt:o[7], bal:o[8]}); });
+  $('q6bankInfo').textContent = `${g}（${guarShort(g)}保）保證的流通在外債券：${rows.length} 檔，流通在外合計 ${fM(sum(rows,'bal'))} 億元（${ISS.outMonth}）`;
+  table(el, [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'issuer',t:'發行公司',l:1},{k:'idate',t:'發行日',l:1},{k:'mat',t:'到期日',l:1,f:v=>v||'無到期日'},
+    {k:'cpn',t:'票面利率%',f:v=>fN(v,4)},{k:'bal',t:'流通在外(億)',f:fM},{k:'amt',t:'發行金額(億)',f:fM}, ...RATING_COLS], rows, {sort:'mat', sortDir:1, rowClass:subRow});
+}
+document.querySelectorAll('#t6 .seg').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b)); SEG6[seg.dataset.for] = b.dataset.v; renderT6(); }));
+$('b6co').onclick = queryCompany;
+$('q6co').addEventListener('keydown', e=>{ if(e.key==='Enter') queryCompany(); });
+$('q6bank').onchange = drawBank;
+
+const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:renderT4, t5:renderT5, t6:renderT6};
 const WEEK = '日一二三四五六';
 function updateAsof(){
   const d = selDate.value, wd = WEEK[new Date(d+'T00:00:00').getDay()];
