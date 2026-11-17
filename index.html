@@ -100,6 +100,8 @@ tbody tr:hover td{background:var(--accent-soft)}
 td .rt{color:var(--muted);font-size:12px;font-weight:400}
 td .who{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:0 5px;margin-left:4px;font-weight:400}
 td .who.g{color:var(--sec);border-color:var(--sec-line);background:var(--sec-bg)}
+#tb6iss table,#tb6mat table{table-layout:fixed}
+#tb6iss th,#tb6iss td,#tb6mat th,#tb6mat td{width:20%}
 .seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;margin:0 0 10px}
 .seg button{font:inherit;font-size:13px;border:0;border-left:1px solid var(--line-strong);background:var(--card);color:var(--ink);padding:5px 14px;cursor:pointer}
 .seg button:first-child{border-left:0}
@@ -232,9 +234,9 @@ body.pdf-mode .chartbox{height:280px}
     <button data-t="t1" class="on">總覽</button>
     <button data-t="t2">公債</button>
     <button data-t="t3">公司債/金融債</button>
+    <button data-t="t6">發行/到期概況</button>
     <button data-t="t4">個別債券查詢</button>
     <button data-t="t5">成交明細</button>
-    <button data-t="t6">發行/到期概況</button>
   </nav>
 </header>
 
@@ -980,10 +982,21 @@ const MAT_YEARS = [Y0, Y0+1, Y0+2, Y0+3, Y0+4, Y0+5];
 const lastIssueMonth = () => { let mx = ''; (ISS.issued||[]).forEach(r=>{ if(r[5] > mx) mx = r[5]; }); return mx; };
 const issYearLabel = y => { if(y!==Y0) return String(y); const lm = lastIssueMonth(); return lm && +lm.slice(0,4)===Y0 ? `${y}（1–${+lm.slice(5,7)}月）` : String(y); };
 const matYearLabel = y => y===Y0 && ISS.outMonth && +ISS.outMonth.slice(0,4)===Y0 ? `${y}（${+ISS.outMonth.slice(5,7)+1}–12月）` : String(y);
+// writes the stack total (億元, integer) above each bar; follows the legend when a type is hidden
+const stackTotals = {id:'stackTotals', afterDatasetsDraw(ch){
+  const {ctx} = ch, n = ch.data.labels.length, vis = ch.data.datasets.map((d,i)=>i).filter(i=>ch.isDatasetVisible(i));
+  if(!vis.length) return;
+  ctx.save(); ctx.font = '600 12px "Segoe UI","Microsoft JhengHei",sans-serif'; ctx.fillStyle = css('--ink'); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  for(let i=0;i<n;i++){
+    const tot = vis.reduce((s,k)=>s+(+ch.data.datasets[k].data[i]||0),0); if(!tot) continue;
+    const top = Math.min(...vis.map(k=>ch.getDatasetMeta(k).data[i].y));
+    ctx.fillText(Math.round(tot).toLocaleString('zh-TW'), ch.getDatasetMeta(vis[0]).data[i].x, top - 4);
+  }
+  ctx.restore(); }};
 function stackChart(id, years, labelOf, sums, only){
   const types = only && only!=='all' ? [only] : TYPE_ORDER;
-  chart(id, {type:'bar', data:{labels:years.map(labelOf), datasets:types.map(t=>({label:TYPE_NAME[t], data:years.map(y=>sums[y][t]/100), backgroundColor:typeColor(t), stack:'s'}))},
-    options:{scales:{x:{stacked:true,ticks:{color:css('--muted')},grid:{display:false}},y:{stacked:true,title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+  chart(id, {type:'bar', plugins:[stackTotals], data:{labels:years.map(labelOf), datasets:types.map(t=>({label:TYPE_NAME[t], data:years.map(y=>sums[y][t]/100), backgroundColor:typeColor(t), stack:'s'}))},
+    options:{layout:{padding:{top:22}}, scales:{x:{stacked:true,ticks:{color:css('--muted')},grid:{display:false}},y:{stacked:true,title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
 }
 function sumTable(el, years, labelOf, sums){
   const rows = years.map(y=>({y:labelOf(y), G:sums[y].G, F:sums[y].F, C:sums[y].C, all:sums[y].G+sums[y].F+sums[y].C}));
