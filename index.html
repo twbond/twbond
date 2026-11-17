@@ -310,7 +310,8 @@ body.pdf-mode .chartbox{height:280px}
       </div>
       <div class="card">
         <h2>指標公債殖利率走勢（%）</h2>
-        <p class="note">取自指標利率行情表的平均殖利率；當日無成交時，櫃買中心沿用最近成交日的數值</p>
+        <p class="note">取自指標利率行情表的平均殖利率；當日無成交時，櫃買中心沿用最近成交日的數值。可點選年期（可複選），點「全部」顯示所有年期。</p>
+        <div class="seg" id="seg2b"><button class="on" data-v="all">全部</button><button data-v="2">2年</button><button data-v="5">5年</button><button data-v="10">10年</button><button data-v="20">20年</button><button data-v="30">30年</button></div>
         <div class="chartbox"><canvas id="c2b"></canvas></div>
       </div>
     </div>
@@ -771,8 +772,21 @@ function renderT2(){
   drawHist();
 
   const pal = [css('--cold'), css('--corp'), css('--accent'), css('--fin'), css('--sub')];
-  chart('c2b', {type:'line', data:{labels:days.map(d=>d.d), datasets:TENORS.map((t,i)=>({label:t+'年', data:days.map(d=>{ const b=(d.b||[]).find(x=>x[0]===t); return b? b[2] : null; }), borderColor:pal[i], backgroundColor:pal[i], pointRadius:0, borderWidth:1.6, spanGaps:true}))},
-    options:{scales:{x:{ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:24},grid:{display:false}},y:{ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+  // 年期選取：SEL2B 為空 = 全部；可複選
+  const drawTrend = () => {
+    const shown = TENORS.map((t,i)=>({t,i})).filter(o=>!SEL2B.size || SEL2B.has(o.t));
+    chart('c2b', {type:'line', data:{labels:days.map(d=>d.d), datasets:shown.map(({t,i})=>({label:t+'年', data:days.map(d=>{ const b=(d.b||[]).find(x=>x[0]===t); return b? b[2] : null; }), borderColor:pal[i], backgroundColor:pal[i], pointRadius:0, borderWidth:1.6, spanGaps:true}))},
+      options:{scales:{x:{ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:24},grid:{display:false}},y:{ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+    document.querySelectorAll('#seg2b button').forEach(b=>{
+      b.classList.toggle('on', b.dataset.v==='all' ? !SEL2B.size : SEL2B.has(+b.dataset.v));
+      b.onclick = ()=>{
+        if(b.dataset.v==='all') SEL2B.clear();
+        else { const v = +b.dataset.v; SEL2B.has(v) ? SEL2B.delete(v) : SEL2B.add(v); if(SEL2B.size===TENORS.length) SEL2B.clear(); }
+        drawTrend();
+      };
+    });
+  };
+  drawTrend();
 }
 
 // ================= TAB 3 =================
@@ -827,6 +841,7 @@ function renderT3(){
 let SEL3 = null;
 // government-bond trades of the tenor picked in the per-tenor summary: opened right under its row (newest first)
 let SEL2 = null;
+const SEL2B = new Set();   // 指標公債走勢圖的年期選取（空 = 全部）
 function openRec2(el, all, ncol){
   if(SEL2==null) return;
   const tr = el.querySelector(':scope > table > tbody > tr.sel');
