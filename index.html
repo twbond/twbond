@@ -50,6 +50,7 @@ header select,header input[type=date]{border-color:transparent}
 header .btn{border-color:rgba(255,255,255,.55);color:var(--head-ink)}
 header .btn:hover{background:rgba(255,255,255,.12)}
 header #customRange{color:var(--head-muted)!important}
+header #dateNote{color:#ffd88a}
 .hrow{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;max-width:1280px;margin:0 auto}
 h1{font-size:20px;margin:0}
 .sub{color:var(--muted);font-size:13px}
@@ -206,7 +207,8 @@ body.pdf-mode .chartbox{height:280px}
       <div class="asof" id="asof"></div>
     </div>
     <div class="ctrls">
-      <label class="c">資料日期 <select id="selDate"></select></label>
+      <label class="c">資料日期 <input type="date" id="selDateIn" aria-label="資料日期"><select id="selDate" hidden></select></label>
+      <span class="c" id="dateNote" style="font-size:12px"></span>
       <label class="c">歷史區間
         <select id="selRange">
           <option value="1d" selected>當天</option>
@@ -532,6 +534,17 @@ function recs(day){
 // ---------- controls ----------
 const selDate = $('selDate'), selRange = $('selRange');
 DAYS.slice().reverse().forEach(d=>{ const o=document.createElement('option'); o.value=o.textContent=d.d; selDate.appendChild(o); });
+// the date is typed (default: today); the page shows the latest trading day on or before it (hidden #selDate holds that day)
+const selDateIn = $('selDateIn');
+const todayIso = (()=>{ const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
+selDateIn.min = DAYS[0].d; selDateIn.max = todayIso; selDateIn.value = todayIso;
+function applyDate(){
+  const v = selDateIn.value || todayIso;
+  const c = DAYS.filter(d=>d.d <= v), eff = c.length ? c[c.length-1].d : DAYS[0].d;
+  selDate.value = eff;
+  $('dateNote').textContent = eff !== v ? `（${v} 無成交資料，顯示 ${eff}）` : '';
+}
+applyDate();
 const curDay = () => BY_DATE[selDate.value];
 function rangeDays(){
   const end = selDate.value, v = selRange.value;
@@ -1251,6 +1264,7 @@ function syncCustom(){
   }
 }
 selDate.onchange = ()=>RENDER[cur]();
+selDateIn.onchange = ()=>{ applyDate(); RENDER[cur](); };
 selRange.onchange = ()=>{ syncCustom(); RENDER[cur](); };
 dFrom.onchange = dTo.onchange = ()=>RENDER[cur]();
 ['g2Tenor','g2Mkt'].forEach(id=>$(id).onchange=renderT2);
