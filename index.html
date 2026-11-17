@@ -1076,12 +1076,17 @@ function drawCompany(){
   $('q6coInfo').innerHTML = `<b>${xs.map(v=>esc(v[0])).join('、')}</b>　統一編號：${esc(x[1]||'（商工登記查無）')}${x[2] ? '　代號：'+esc(x[2]) : ''}`;
   $('q6coBody').style.display = '';
   const pick = (kind, years) => (e, els) => { if(!els || !els.length) return; SEL6.kind = kind; SEL6.year = years[els[0].index]; drawCompanyTable(cd); };
-  chart('c6coIss', {type:'bar', data:{labels:ISS_YEARS.map(issYearLabel), datasets:[{label:'發行金額', data:ISS_YEARS.map(y=>cd.iss[y].reduce((s,r)=>s+(r[7]||0),0)/100), backgroundColor:css('--accent')}]},
-    options:{onClick:pick('iss', ISS_YEARS), onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:css('--muted')},grid:{display:false}},y:{ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
-  chart('c6coMat', {type:'bar', data:{labels:MAT_YEARS.map(matYearLabel), datasets:[{label:'到期金額', data:MAT_YEARS.map(y=>cd.mat[y].reduce((s,p)=>s+p.amt,0)/100), backgroundColor:css('--corp')}]},
-    options:{onClick:pick('mat', MAT_YEARS), onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:css('--muted')},grid:{display:false}},y:{ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+  // 兩張圖同尺寸：共用 Y 軸上限、固定 Y 軸寬度、年份標籤不斜放（分兩行）、柱寬一致
+  const issVals = ISS_YEARS.map(y=>cd.iss[y].reduce((s,r)=>s+(r[7]||0),0)/100);
+  const matVals = MAT_YEARS.map(y=>cd.mat[y].reduce((s,p)=>s+p.amt,0)/100);
+  const coMax = Math.max(1, ...issVals, ...matVals);
+  const twoLine = l => { const i = String(l).indexOf('（'); return i > 0 ? [l.slice(0,i), l.slice(i)] : l; };
+  const coOpts = (kind, years) => ({onClick:pick(kind, years), onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}},
+    scales:{x:{ticks:{color:css('--muted'), maxRotation:0, minRotation:0, autoSkip:false},grid:{display:false}},
+            y:{beginAtZero:true, suggestedMax:coMax, ticks:{color:css('--muted')}, grid:{color:css('--line')}, afterFit:s=>{ s.width = 56; }}}});
+  const nMax = Math.max(ISS_YEARS.length, MAT_YEARS.length), barPct = n => 0.9 * n / nMax;
+  chart('c6coIss', {type:'bar', data:{labels:ISS_YEARS.map(y=>twoLine(issYearLabel(y))), datasets:[{label:'發行金額', data:issVals, backgroundColor:css('--accent'), barPercentage:barPct(ISS_YEARS.length)}]}, options:coOpts('iss', ISS_YEARS)});
+  chart('c6coMat', {type:'bar', data:{labels:MAT_YEARS.map(y=>twoLine(matYearLabel(y))), datasets:[{label:'到期金額', data:matVals, backgroundColor:css('--corp'), barPercentage:barPct(MAT_YEARS.length)}]}, options:coOpts('mat', MAT_YEARS)});
   drawCompanyTable(cd);
 }
 function drawCompanyTable(cd){
