@@ -4,9 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>臺幣債券分析</title>
-<script src="data/data.js"></script>
-<script src="data/issue.js"></script>
-<script src="data/broker.js"></script>
+<script>
+// load the data files; on the public website add a time stamp (changes every 5 minutes) so browsers
+// always fetch the newest data instead of an old cached copy
+(function(){
+  var base = 'data/';
+  var v = /github\.io$/.test(location.hostname) ? '?v=' + Math.floor(Date.now() / 300000) : '';
+  ['data.js', 'issue.js', 'broker.js'].forEach(function(f){ document.write('<script src="' + base + f + v + '"><\/script>'); });
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
