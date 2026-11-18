@@ -429,8 +429,8 @@ body.pdf-mode .chartbox{height:280px}
       <div id="q6coInfo" class="note"></div>
       <div id="q6coBody" style="display:none">
         <div class="grid2">
-          <div><h3 class="sub-h">過去 5 年發行金額（億元）</h3><div class="chartbox" style="height:240px"><canvas id="c6coIss"></canvas></div></div>
-          <div><h3 class="sub-h">未來 5 年到期金額（億元）</h3><div class="chartbox" style="height:240px"><canvas id="c6coMat"></canvas></div></div>
+          <div><h3 class="sub-h">過去 5 年發行金額（億元，依發行年期）</h3><div class="chartbox" style="height:290px"><canvas id="c6coIss"></canvas></div></div>
+          <div><h3 class="sub-h">未來 5 年到期金額（億元，依發行年期）</h3><div class="chartbox" style="height:290px"><canvas id="c6coMat"></canvas></div></div>
         </div>
         <h3 class="sub-h" id="q6coSelTitle">點選上方圖表的年度，查看該年度的債券</h3>
         <div class="tw scroll" id="tb6co"></div>
@@ -1072,7 +1072,7 @@ function bondInfoHtml(code){
     h += item('債券評等', br ? esc(br[0] + '（' + agShort(br[1]) + '）') : '--');
     h += item(orr && orr[2].startsWith('保證人') ? '保證人評等' : '發行人評等', orr ? esc(orr[0] + '（' + agShort(orr[1]) + '）') : '--');
   }
-  h += item('最近成交', last ? esc(last.d) + '　' + last.hits.map(x=>`${x.m} ${fN(x.y)}%`).join('、') : '近 5 年無成交紀錄', true);
+  h += item('最近成交', last ? esc(last.d) + '　' + last.hits.map(x=>`${x.m} ${fN(x.y)}%`).join('、') : `資料期間（${DAYS[0].d} 起）內無成交紀錄`, true);
   h += '</dl>';
   h += `<p class="note" style="margin-top:6px">資料來源：櫃買中心上櫃債券發行／流通在外餘額月報表、永續發展債券名單；債券全名、擔保、次順位與評等取自公開資訊觀測站。</p>`;
   return h;
@@ -1290,12 +1290,22 @@ function drawCompany(){
   const matVals = MAT_YEARS.map(y=>cd.mat[y].reduce((s,p)=>s+p.amt,0)/100);
   const coMax = Math.max(1, ...issVals, ...matVals);
   const twoLine = l => { const i = String(l).indexOf('（'); return i > 0 ? [l.slice(0,i), l.slice(i)] : l; };
-  const coOpts = (kind, years) => ({onClick:pick(kind, years), onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; }, plugins:{legend:{display:false}},
-    scales:{x:{ticks:{color:css('--muted'), maxRotation:0, minRotation:0, autoSkip:false},grid:{display:false}},
-            y:{beginAtZero:true, suggestedMax:coMax, ticks:{color:css('--muted')}, grid:{color:css('--line')}, afterFit:s=>{ s.width = 56; }}}});
+  const coOpts = (kind, years) => ({onClick:pick(kind, years), onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+    layout:{padding:{top:22}}, plugins:{legend:{display:true}},
+    scales:{x:{stacked:true, ticks:{color:css('--muted'), maxRotation:0, minRotation:0, autoSkip:false},grid:{display:false}},
+            y:{stacked:true, beginAtZero:true, suggestedMax:coMax*1.08, ticks:{color:css('--muted')}, grid:{color:css('--line')}, afterFit:s=>{ s.width = 56; }}}});
   const nMax = Math.max(ISS_YEARS.length, MAT_YEARS.length), barPct = n => 0.9 * n / nMax;
-  chart('c6coIss', {type:'bar', data:{labels:ISS_YEARS.map(y=>twoLine(issYearLabel(y))), datasets:[{label:'發行金額', data:issVals, backgroundColor:css('--accent'), barPercentage:barPct(ISS_YEARS.length)}]}, options:coOpts('iss', ISS_YEARS)});
-  chart('c6coMat', {type:'bar', data:{labels:MAT_YEARS.map(y=>twoLine(matYearLabel(y))), datasets:[{label:'到期金額', data:matVals, backgroundColor:css('--corp'), barPercentage:barPct(MAT_YEARS.length)}]}, options:coOpts('mat', MAT_YEARS)});
+  // 依原發行年期分段堆疊（同一年期各圖固定同色），柱頂標示該年度總金額
+  const CO_TERMS = [2,3,5,7,10,15,20,30];
+  const coBucket = term => { if(term==null || term>=99) return '無到期日'; const r = Math.round(term); return CO_TERMS.includes(r) && Math.abs(term-r)<0.05 ? r+'年' : '其他'; };
+  const CO_ORDER = [...CO_TERMS.map(n=>n+'年'), '其他', '無到期日'];
+  const termSets = (years, rowsOf, termOf, amtOf, n) => CO_ORDER.map(b=>({label:b, data:years.map(y=>rowsOf(y).filter(x=>coBucket(termOf(x))===b).reduce((s,x)=>s+(amtOf(x)||0),0)/100),
+    backgroundColor:TERM_COLOR[b], stack:'s', barPercentage:barPct(n)})).filter(d=>d.data.some(v=>v>0));
+  const issSets = termSets(ISS_YEARS, y=>cd.iss[y], r=>r[6], r=>r[7], ISS_YEARS.length);
+  const matSets = termSets(MAT_YEARS, y=>cd.mat[y], p=>p.o[6], p=>p.amt, MAT_YEARS.length);
+  const blank = n => [{label:'無資料', data:new Array(n).fill(0), backgroundColor:css('--line'), stack:'s'}];
+  chart('c6coIss', {type:'bar', plugins:[stackTotals], data:{labels:ISS_YEARS.map(y=>twoLine(issYearLabel(y))), datasets:issSets.length ? issSets : blank(ISS_YEARS.length)}, options:coOpts('iss', ISS_YEARS)});
+  chart('c6coMat', {type:'bar', plugins:[stackTotals], data:{labels:MAT_YEARS.map(y=>twoLine(matYearLabel(y))), datasets:matSets.length ? matSets : blank(MAT_YEARS.length)}, options:coOpts('mat', MAT_YEARS)});
   drawCompanyTable(cd);
 }
 function drawCompanyTable(cd){
