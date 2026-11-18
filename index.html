@@ -508,8 +508,8 @@ body.pdf-mode .chartbox{height:280px}
     </div>
     <div class="card">
       <h2>各年度 ESG 債券五大發行人（過去 5 年）</h2>
-      <p class="note">選擇年度，列出該年度 ESG 債券發行金額前 5 大的發行人，跟隨上方「過去 5 年發行金額」的 ESG 類別選擇。點選發行人，下方列出該發行人當年度發行的 ESG 債券。</p>
-      <div class="seg" id="q9topYear"></div>
+      <p class="note">選擇年度，列出該年度 ESG 債券發行金額前 5 大的發行人，跟隨上方「過去 5 年發行金額」的 ESG 類別選擇；按「排除地方政府債」可不計地方政府債。點選發行人，下方列出該發行人當年度發行的 ESG 債券。</p>
+      <div class="row" style="align-items:center;gap:12px"><div class="seg" id="q9topYear" style="margin:0"></div><div class="seg" style="margin:0"><button id="q9exclM" title="按下後五大發行人排名與統計不含地方政府債">排除地方政府債</button></div></div>
       <div id="q9topInfo" class="note"></div>
       <div class="tw" id="q9top"></div>
       <h3 class="sub-h" id="q9topTitle">點選上方的發行人，查看該年度發行的 ESG 債券</h3>
@@ -1491,7 +1491,7 @@ $('q6bank').onchange = drawBank;
 const ESG_CATS = ['綠色債券','社會責任債券','可持續發展債券','可持續發展連結債券'];
 const ESG_COLOR = {'綠色債券':'#59a14f','社會責任債券':'#4e79a7','可持續發展債券':'#f28e2b','可持續發展連結債券':'#b07aa1'};
 const esgCat = code => ESG[code] ? ESG[code][0] : null;
-let SEG9 = {iss:'all', mat:'all'}, SEL9 = {iss:null, mat:null}, SEL9TOP = {year:null, issuer:null}, TOP9Y = Y0;
+let SEG9 = {iss:'all', mat:'all'}, SEL9 = {iss:null, mat:null}, SEL9TOP = {year:null, issuer:null}, TOP9Y = Y0, EXCL9M = false;
 const issuerName9 = r => { if(r[9]) return r[9]; const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? x[0] : (r[1]==='G' ? '中央政府' : r[2]); };
 const issuerKey9 = r => { if(r[9]) return r[9]; const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? (x[1] || x[0]) : issuerName9(r); };
 // 發行月報表沒有的 ESG 債券（地方政府債、最近一期月報之後發行的債券），改用櫃買中心 ESG 名單的發行人、發行日與發行金額補入；
@@ -1566,14 +1566,17 @@ function drawT9Sel(d){
 function drawT9Top(d){
   // 年度按鈕（預設最近一年）
   const yb = $('q9topYear'), Y = TOP9Y;
+  const L = d.iss[Y].filter(r=>!EXCL9M || r[1]!=='M');   // 排除地方政府債時不計入
+  const xb = $('q9exclM'); xb.classList.toggle('on', EXCL9M);
+  xb.onclick = ()=>{ EXCL9M = !EXCL9M; SEL9TOP = {year:null, issuer:null}; drawT9Top(d); };
   yb.innerHTML = ISS_YEARS.slice().reverse().map(y=>`<button data-y="${y}" class="${y===Y?'on':''}">${esc(esgYearLabel(y))}</button>`).join('');
   yb.querySelectorAll('button').forEach(b=>b.onclick=()=>{ TOP9Y = +b.dataset.y; SEL9TOP = {year:null, issuer:null}; drawT9Top(d); });
   // 當年度前 5 大發行人
-  const g = {}; d.iss[Y].forEach(r=>{ const k = issuerKey9(r), c = esgCat(r[0]); (g[k] = g[k] || {k, name:issuerName9(r), amt:0, n:0}); g[k].amt += r[7]||0; g[k].n++; g[k][c] = (g[k][c]||0) + (r[7]||0); });
-  const tot = d.iss[Y].reduce((s,r)=>s+(r[7]||0),0), all = Object.values(g).sort((a,b)=>b.amt-a.amt), top = all.slice(0,5);
+  const g = {}; L.forEach(r=>{ const k = issuerKey9(r), c = esgCat(r[0]); (g[k] = g[k] || {k, name:issuerName9(r), amt:0, n:0}); g[k].amt += r[7]||0; g[k].n++; g[k][c] = (g[k][c]||0) + (r[7]||0); });
+  const tot = L.reduce((s,r)=>s+(r[7]||0),0), all = Object.values(g).sort((a,b)=>b.amt-a.amt), top = all.slice(0,5);
   top.forEach((x,i)=>{ x.rank = i+1; x.pct = tot ? x.amt/tot*100 : null; });
   const top5 = sum(top,'amt');
-  $('q9topInfo').textContent = tot ? `${esgYearLabel(Y)} ESG 債券發行合計 ${fM(tot)} 億元（${d.iss[Y].length} 檔，${all.length} 家發行人）；前 5 大合計 ${fM(top5)} 億元，占 ${fN(top5/tot*100,1)}%。` : `${esgYearLabel(Y)} 沒有符合所選類別的 ESG 債券發行。`;
+  $('q9topInfo').textContent = tot ? `${esgYearLabel(Y)} ESG 債券發行合計${EXCL9M ? '（不含地方政府債）' : ''} ${fM(tot)} 億元（${L.length} 檔，${all.length} 家發行人）；前 5 大合計 ${fM(top5)} 億元，占 ${fN(top5/tot*100,1)}%。` : `${esgYearLabel(Y)} 沒有符合所選類別的 ESG 債券發行。`;
   const cats = d.catsIss;   // 選取的類別一律列出（該年沒有的顯示 –）
   table($('q9top'), [{k:'rank',t:'名次',c:1},{k:'name',t:'發行人',l:1},{k:'n',t:'檔數'},{k:'amt',t:'發行金額(億)',f:fM},{k:'pct',t:'占當年比重%',f:v=>fN(v,1)},
     ...(cats.length > 1 ? cats.map(c=>({k:c,t:`<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${ESG_COLOR[c]};margin-right:4px"></span>${esc(ESG_SHORT[c]||c)}(億)`,f:v=>v?fM(v):'–'})) : [])],
