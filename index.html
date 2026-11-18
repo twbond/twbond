@@ -94,6 +94,12 @@ main{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
 .asof b{color:var(--head-ink);font-size:16px;letter-spacing:.3px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media (max-width:900px){.grid2{grid-template-columns:1fr}}
+#t9 .grid2 > div{min-width:0}
+#tb9selIss,#tb9selMat{margin-bottom:12px}
+.top9{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin:8px 0 4px}
+.top9y{border:1px solid var(--line);border-radius:8px;padding:8px 10px;overflow-x:auto}
+.top9h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.top9y table{width:100%}
 .tw{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums lining-nums;font-feature-settings:"tnum" 1,"lnum" 1}
 td{font-family:"Segoe UI","Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif}
@@ -262,6 +268,7 @@ body.pdf-mode .chartbox{height:280px}
     <button data-t="t2">公債</button>
     <button data-t="t3">公司債/金融債</button>
     <button data-t="t6">發行/到期概況</button>
+    <button data-t="t9">ESG</button>
     <button data-t="t4">債券成交查詢</button>
     <button data-t="t8">成交統計</button>
     <button data-t="t5">成交明細</button>
@@ -480,6 +487,35 @@ body.pdf-mode .chartbox{height:280px}
       <div class="row"><label class="c">保證銀行 <select id="q6bank"><option value="">請選擇…</option></select></label></div>
       <div id="q6bankInfo" class="note"></div>
       <div class="tw scroll" id="tb6bank"></div>
+    </div>
+  </section>
+
+  <!-- 9 ESG：永續發展債券發行 / 到期 / 五大發行人 -->
+  <section class="tab" id="t9">
+    <div class="card">
+      <h2>ESG 債券市場概況</h2>
+      <p class="note" id="q9note">依櫃買中心永續發展債券名單，對照上櫃債券發行月報表與流通在外餘額月報表（新台幣計價），單位：億元。點選圖上的年度，該圖下方列出該年度的 ESG 債券，再點一次即可收合。</p>
+      <div class="grid2">
+        <div><h3 class="sub-h">過去 5 年發行金額（億元，依 ESG 類別）</h3>
+          <div class="seg seg9" data-for="iss"><button class="on" data-v="all">全部</button><button data-v="綠色債券">綠色</button><button data-v="社會責任債券">社會責任</button><button data-v="可持續發展債券">可持續發展</button><button data-v="可持續發展連結債券">永續連結</button></div>
+          <div class="chartbox" style="height:300px"><canvas id="c9iss"></canvas></div>
+          <h3 class="sub-h" id="q9selIss">點選上方圖表的年度，查看該年度發行的 ESG 債券</h3>
+          <div class="tw scroll" id="tb9selIss"></div>
+          <div class="tw" id="tb9iss"></div></div>
+        <div><h3 class="sub-h">未來 5 年到期金額（億元，依 ESG 類別）</h3>
+          <div class="seg seg9" data-for="mat"><button class="on" data-v="all">全部</button><button data-v="綠色債券">綠色</button><button data-v="社會責任債券">社會責任</button><button data-v="可持續發展債券">可持續發展</button><button data-v="可持續發展連結債券">永續連結</button></div>
+          <div class="chartbox" style="height:300px"><canvas id="c9mat"></canvas></div>
+          <h3 class="sub-h" id="q9selMat">點選上方圖表的年度，查看該年度到期的 ESG 債券</h3>
+          <div class="tw scroll" id="tb9selMat"></div>
+          <div class="tw" id="tb9mat"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>各年度 ESG 債券五大發行人（過去 5 年）</h2>
+      <p class="note">依當年度發行金額排名，跟隨上方「過去 5 年發行金額」的 ESG 類別選擇。點選發行人，下方列出該發行人當年度發行的 ESG 債券。</p>
+      <div class="top9" id="q9top"></div>
+      <h3 class="sub-h" id="q9topTitle">點選上方的發行人，查看該年度發行的 ESG 債券</h3>
+      <div class="tw scroll" id="tb9top"></div>
     </div>
   </section>
 
@@ -1453,7 +1489,107 @@ document.querySelectorAll('#q6quick button[data-tax]').forEach(b=>b.onclick=()=>
 $('q6co').addEventListener('keydown', e=>{ if(e.key==='Enter') queryCompany(); });
 $('q6bank').onchange = drawBank;
 
-const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:renderT4, t5:renderT5, t6:renderT6, t7:renderT7, t8:renderT8};
+// ================= TAB 9 ESG =================
+const ESG_CATS = ['綠色債券','社會責任債券','可持續發展債券','可持續發展連結債券'];
+const ESG_COLOR = {'綠色債券':'#59a14f','社會責任債券':'#4e79a7','可持續發展債券':'#f28e2b','可持續發展連結債券':'#b07aa1'};
+const esgCat = code => ESG[code] ? ESG[code][0] : null;
+let SEG9 = {iss:'all', mat:'all'}, SEL9 = {iss:null, mat:null}, SEL9TOP = {year:null, issuer:null};
+const issuerName9 = r => { const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? x[0] : (r[1]==='G' ? '中央政府' : r[2]); };
+const issuerKey9 = r => { const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? (x[1] || x[0]) : issuerName9(r); };
+function esgData(){
+  const catsOf = v => v==='all' ? ESG_CATS : ESG_CATS.filter(c=>v.includes(c));
+  const catsIss = catsOf(SEG9.iss), catsMat = catsOf(SEG9.mat);
+  const iss = {}, mat = {}; ISS_YEARS.forEach(y=>iss[y]=[]); MAT_YEARS.forEach(y=>mat[y]=[]);
+  ISS.issued.forEach(r=>{ const c = esgCat(r[0]); if(!c || !catsIss.includes(c) || !r[7]) return; const y = +String(r[5]).slice(0,4); if(iss[y]) iss[y].push(r); });
+  ISS.out.forEach(o=>{ const c = esgCat(o[0]); if(!c || !catsMat.includes(c)) return; payments(o).forEach(p=>{ const y = +p.date.slice(0,4); if(mat[y]) mat[y].push({o, amt:p.amt, date:p.date}); }); });
+  return {catsIss, catsMat, iss, mat};
+}
+function renderT9(){
+  if(!ISS){ $('q9note').textContent = '找不到發行／到期資料（data/issue.js）。'; return; }
+  const d = esgData();
+  const twoLine = l => { const i = String(l).indexOf('（'); return i > 0 ? [l.slice(0,i), l.slice(i)] : l; };
+  const issSum = (y,c) => d.iss[y].filter(r=>esgCat(r[0])===c).reduce((s,r)=>s+(r[7]||0),0);
+  const matSum = (y,c) => d.mat[y].filter(p=>esgCat(p.o[0])===c).reduce((s,p)=>s+p.amt,0);
+  const sets = (years, f, cats) => cats.map(c=>({label:ESG_SHORT[c]||c, data:years.map(y=>f(y,c)/100), backgroundColor:ESG_COLOR[c], stack:'s'}));
+  // 兩張圖同尺寸：共用 Y 軸上限、固定 Y 軸寬度
+  const mx = Math.max(1, ...ISS_YEARS.map(y=>d.catsIss.reduce((s,c)=>s+issSum(y,c),0)/100), ...MAT_YEARS.map(y=>d.catsMat.reduce((s,c)=>s+matSum(y,c),0)/100));
+  const pick = (kind, years) => (e, els) => { if(!els || !els.length) return; const y = years[els[0].index]; SEL9[kind] = SEL9[kind]===y ? null : y; drawT9Sel(d); };
+  const opts = (kind, years) => ({onClick:pick(kind, years), onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+    layout:{padding:{top:22}}, plugins:{legend:{display:true}},
+    scales:{x:{stacked:true, ticks:{color:css('--muted'), maxRotation:0, minRotation:0, autoSkip:false}, grid:{display:false}},
+            y:{stacked:true, beginAtZero:true, suggestedMax:mx*1.08, ticks:{color:css('--muted')}, grid:{color:css('--line')}, afterFit:s=>{ s.width = 56; }}}});
+  chart('c9iss', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:ISS_YEARS.map(y=>twoLine(issYearLabel(y))), datasets:sets(ISS_YEARS, issSum, d.catsIss)}, options:opts('iss', ISS_YEARS)});
+  chart('c9mat', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:MAT_YEARS.map(y=>twoLine(matYearLabel(y))), datasets:sets(MAT_YEARS, matSum, d.catsMat)}, options:opts('mat', MAT_YEARS)});
+  // 各年度各類 ESG 債券金額
+  const sumTab = (el, years, labelOf, f, head, cats) => {
+    const rows = years.map(y=>{ const o = {y:labelOf(y), all:0}; cats.forEach(c=>{ o[c] = f(y,c); o.all += o[c]; }); return o; });
+    const tot = {_sum:true, y:'合計', all:sum(rows,'all')}; cats.forEach(c=>tot[c] = sum(rows,c)); rows.push(tot);
+    const cols = [{k:'y',t:head,l:1}, ...cats.map(c=>({k:c,t:ESG_SHORT[c]||c,f:fM}))]; if(cats.length > 1) cols.push({k:'all',t:'合計',f:fM});
+    table(el, cols, rows, {noSort:true});
+  };
+  sumTab($('tb9iss'), ISS_YEARS, issYearLabel, issSum, '發行年度', d.catsIss);
+  sumTab($('tb9mat'), MAT_YEARS, matYearLabel, matSum, '到期年度', d.catsMat);
+  $('q9note').textContent = `依櫃買中心永續發展債券名單，對照上櫃債券發行月報表與流通在外餘額月報表（${ISS.outMonth}）計算，新台幣計價，單位：億元。到期金額以流通在外餘額計，分期還本依還本方式拆到各年度。櫃買中心名單只列流通在外的債券，已到期的 ESG 債券可能未列入發行金額。點選圖上的年度，該圖下方列出該年度的 ESG 債券，再點一次即可收合。`;
+  drawT9Sel(d); drawT9Top(d);
+}
+// ESG 類別標籤用與圖例相同的顏色
+const esgCol = {k:'cat',t:'ESG 類別',l:1,f:v=>v?`<span class="tag" style="margin-left:0;background:${ESG_COLOR[v]||'#888'};border-color:${ESG_COLOR[v]||'#888'};color:#fff;font-weight:600">${esc(ESG_SHORT[v]||v)}</span>`:''};
+const esgStdCol = {k:'std',t:'採用標準',l:1};
+function esgRow(code, extra){ return bondObj(code, Object.assign({cat:esgCat(code), std:ESG[code] ? ESG[code][1] : ''}, extra)); }
+function issRows9(list){ return list.map(r=>esgRow(r[0], {name:r[2], issuer:issuerName9(r), idate:r[5], term:r[6], cpn:r[4], amt:r[7], mat:matOf(r[5], r[6], r[8])})); }
+const base9 = [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:(v,r)=>esc(v) + subTag(r) + secTag(r.code)},esgCol,{k:'issuer',t:'發行人',l:1},{k:'idate',t:'發行日',l:1},{k:'mat',t:'到期日',l:1,f:v=>v||'無到期日'},
+  {k:'term',t:'年期',f:v=>v==null?'–':fN(v,2).replace(/\.?0+$/,'')+' 年'},{k:'cpn',t:'票面利率%',f:v=>fN(v,4)}];
+// 發行、到期各自的明細，顯示在各自的圖下方（半欄寬，金額欄放前面）
+function drawT9Sel(d){
+  const [c0, c1, c2, ...rest] = base9;   // 代號、名稱、ESG 類別 | 發行人…
+  const ei = $('tb9selIss'), em = $('tb9selMat');
+  if(SEL9.iss==null){ $('q9selIss').textContent = '點選上方圖表的年度，查看該年度發行的 ESG 債券'; ei.innerHTML = ''; }
+  else {
+    const rows = issRows9(d.iss[SEL9.iss]);
+    $('q9selIss').textContent = `${issYearLabel(SEL9.iss)} 發行的 ESG 債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
+    table(ei, [c0, c1, c2, {k:'amt',t:'發行金額(億)',f:fM}, ...rest, esgStdCol, guarCol, ...RATING_COLS], rows, {sort:'idate', sortDir:1});
+  }
+  if(SEL9.mat==null){ $('q9selMat').textContent = '點選上方圖表的年度，查看該年度到期的 ESG 債券'; em.innerHTML = ''; }
+  else {
+    const rows = d.mat[SEL9.mat].map(p=>{ const o = p.o; return esgRow(o[0], {name:o[2], issuer:issuerName9(o), idate:o[5], term:o[6], cpn:o[4], amt:o[7], bal:o[8], due:p.amt, ddate:p.date, mat:matOf(o[5], o[6], o[10])}); });
+    $('q9selMat').textContent = `${matYearLabel(SEL9.mat)} 到期的 ESG 債券（${rows.length} 筆，當年到期合計 ${fM(sum(rows,'due'))} 億元）`;
+    table(em, [c0, c1, c2, {k:'ddate',t:'還本日',l:1},{k:'due',t:'當年到期金額(億)',f:fM}, ...rest, {k:'bal',t:'流通在外(億)',f:fM},{k:'amt',t:'發行金額(億)',f:fM}, esgStdCol, guarCol, ...RATING_COLS], rows, {sort:'ddate', sortDir:1});
+  }
+}
+function drawT9Top(d){
+  const box = $('q9top');
+  let h = '';
+  ISS_YEARS.slice().reverse().forEach(y=>{
+    const g = {}; d.iss[y].forEach(r=>{ const k = issuerKey9(r); (g[k] = g[k] || {k, name:issuerName9(r), amt:0, n:0}); g[k].amt += r[7]||0; g[k].n++; });
+    const tot = d.iss[y].reduce((s,r)=>s+(r[7]||0),0);
+    const top = Object.values(g).sort((a,b)=>b.amt-a.amt).slice(0,5);
+    h += `<div class="top9y"><div class="top9h"><b>${esc(issYearLabel(y))}</b><span class="note" style="margin:0">共 ${fM(tot)} 億元</span></div><table><thead><tr><th class="c">名次</th><th class="l">發行人</th><th>檔數</th><th>金額(億)</th></tr></thead><tbody>`;
+    if(!top.length) h += '<tr><td colspan="4" class="empty">沒有發行</td></tr>';
+    top.forEach((x,i)=>{ const on = SEL9TOP.year===y && SEL9TOP.issuer===x.k; h += `<tr class="click${on?' sel':''}" data-y="${y}" data-k="${esc(x.k)}"><td class="c">${i+1}</td><td class="l">${esc(x.name)}</td><td>${x.n}</td><td>${fM(x.amt)}</td></tr>`; });
+    h += '</tbody></table></div>';
+  });
+  box.innerHTML = h;
+  box.querySelectorAll('tr[data-k]').forEach(tr=>tr.onclick=()=>{ const y = +tr.dataset.y, k = tr.dataset.k;
+    SEL9TOP = SEL9TOP.year===y && SEL9TOP.issuer===k ? {year:null, issuer:null} : {year:y, issuer:k}; drawT9Top(d);
+    if(SEL9TOP.issuer) $('q9topTitle').scrollIntoView({behavior:'smooth', block:'nearest'}); });
+  const el = $('tb9top');
+  if(!SEL9TOP.issuer){ $('q9topTitle').textContent = '點選上方的發行人，查看該年度發行的 ESG 債券'; el.innerHTML = ''; return; }
+  const rows = issRows9(d.iss[SEL9TOP.year].filter(r=>issuerKey9(r)===SEL9TOP.issuer));
+  if(!rows.length){ SEL9TOP = {year:null, issuer:null}; drawT9Top(d); return; }
+  $('q9topTitle').textContent = `${rows[0].issuer}　${issYearLabel(SEL9TOP.year)} 發行的 ESG 債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
+  table(el, base9.concat([{k:'amt',t:'發行金額(億)',f:fM}, esgStdCol, guarCol, ...RATING_COLS]), rows, {sort:'idate', sortDir:1});
+}
+// 可複選：點類別切換選取；「全部」或四類全選、全部取消時回到全部
+document.querySelectorAll('#t9 .seg9').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  const k = seg.dataset.for, v = b.dataset.v;
+  let cur = SEG9[k]==='all' ? [] : SEG9[k].slice();
+  if(v==='all') cur = [];
+  else cur = cur.includes(v) ? cur.filter(x=>x!==v) : cur.concat(v);
+  SEG9[k] = !cur.length || cur.length===ESG_CATS.length ? 'all' : cur;
+  seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', SEG9[k]==='all' ? x.dataset.v==='all' : SEG9[k].includes(x.dataset.v)));
+  renderT9(); }));
+
+const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:renderT4, t5:renderT5, t6:renderT6, t7:renderT7, t8:renderT8, t9:renderT9};
 const WEEK = '日一二三四五六';
 function updateAsof(){
   const d = selDate.value, wd = WEEK[new Date(d+'T00:00:00').getDay()];
