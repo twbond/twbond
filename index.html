@@ -1492,13 +1492,22 @@ const ESG_CATS = ['綠色債券','社會責任債券','可持續發展債券','�
 const ESG_COLOR = {'綠色債券':'#59a14f','社會責任債券':'#4e79a7','可持續發展債券':'#f28e2b','可持續發展連結債券':'#b07aa1'};
 const esgCat = code => ESG[code] ? ESG[code][0] : null;
 let SEG9 = {iss:'all', mat:'all'}, SEL9 = {iss:null, mat:null}, SEL9TOP = {year:null, issuer:null}, TOP9Y = Y0;
-const issuerName9 = r => { const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? x[0] : (r[1]==='G' ? '中央政府' : r[2]); };
-const issuerKey9 = r => { const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? (x[1] || x[0]) : issuerName9(r); };
+const issuerName9 = r => { if(r[9]) return r[9]; const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? x[0] : (r[1]==='G' ? '中央政府' : r[2]); };
+const issuerKey9 = r => { if(r[9]) return r[9]; const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? (x[1] || x[0]) : issuerName9(r); };
+// 發行月報表沒有的 ESG 債券（地方政府債、最近一期月報之後發行的債券），改用櫃買中心 ESG 名單的發行人、發行日與發行金額補入；
+// 名單中代號全為數字者是轉換公司債，不納入（data.js 只替新台幣、非轉換公司債的 ESG 債券帶發行資料）
+// 補入列：[code, type, name, null, null, issueDate, null, amt(million), null, issuerName]
+const ESG_EXTRA = (()=>{ if(!ISS) return []; const has = new Set(ISS.issued.map(r=>r[0]));
+  return Object.keys(ESG).filter(c=>{ const e = ESG[c]; return e.length >= 6 && e[5] && e[2] && !has.has(c) && !/^\d+$/.test(c); })
+    .map(c=>{ const e = ESG[c]; return [c, c[0]==='H' ? 'M' : typeOfCode(c), e[4], null, null, e[2], null, e[5]*100, null, e[3]]; }); })();
+// ESG 頁的年度標籤：今年的月份以月報與補入債券中最晚的發行日為準
+const esgYearLabel = y => { if(y!==Y0) return String(y); let lm = lastIssueMonth(); ESG_EXTRA.forEach(r=>{ if(r[5] > lm) lm = r[5]; });
+  return lm && +lm.slice(0,4)===Y0 ? `${y}（1–${+lm.slice(5,7)}月）` : String(y); };
 function esgData(){
   const catsOf = v => v==='all' ? ESG_CATS : ESG_CATS.filter(c=>v.includes(c));
   const catsIss = catsOf(SEG9.iss), catsMat = catsOf(SEG9.mat);
   const iss = {}, mat = {}; ISS_YEARS.forEach(y=>iss[y]=[]); MAT_YEARS.forEach(y=>mat[y]=[]);
-  ISS.issued.forEach(r=>{ const c = esgCat(r[0]); if(!c || !catsIss.includes(c) || !r[7]) return; const y = +String(r[5]).slice(0,4); if(iss[y]) iss[y].push(r); });
+  ISS.issued.concat(ESG_EXTRA).forEach(r=>{ const c = esgCat(r[0]); if(!c || !catsIss.includes(c) || !r[7]) return; const y = +String(r[5]).slice(0,4); if(iss[y]) iss[y].push(r); });
   ISS.out.forEach(o=>{ const c = esgCat(o[0]); if(!c || !catsMat.includes(c)) return; payments(o).forEach(p=>{ const y = +p.date.slice(0,4); if(mat[y]) mat[y].push({o, amt:p.amt, date:p.date}); }); });
   return {catsIss, catsMat, iss, mat};
 }
@@ -1516,7 +1525,7 @@ function renderT9(){
     layout:{padding:{top:22}}, plugins:{legend:{display:true}},
     scales:{x:{stacked:true, ticks:{color:css('--muted'), maxRotation:0, minRotation:0, autoSkip:false}, grid:{display:false}},
             y:{stacked:true, beginAtZero:true, suggestedMax:mx*1.08, ticks:{color:css('--muted')}, grid:{color:css('--line')}, afterFit:s=>{ s.width = 56; }}}});
-  chart('c9iss', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:ISS_YEARS.map(y=>twoLine(issYearLabel(y))), datasets:sets(ISS_YEARS, issSum, d.catsIss)}, options:opts('iss', ISS_YEARS)});
+  chart('c9iss', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:ISS_YEARS.map(y=>twoLine(esgYearLabel(y))), datasets:sets(ISS_YEARS, issSum, d.catsIss)}, options:opts('iss', ISS_YEARS)});
   chart('c9mat', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:MAT_YEARS.map(y=>twoLine(matYearLabel(y))), datasets:sets(MAT_YEARS, matSum, d.catsMat)}, options:opts('mat', MAT_YEARS)});
   // 各年度各類 ESG 債券金額
   const sumTab = (el, years, labelOf, f, head, cats) => {
@@ -1525,18 +1534,18 @@ function renderT9(){
     const cols = [{k:'y',t:head,l:1}, ...cats.map(c=>({k:c,t:ESG_SHORT[c]||c,f:fM}))]; if(cats.length > 1) cols.push({k:'all',t:'合計',f:fM});
     table(el, cols, rows, {noSort:true});
   };
-  sumTab($('tb9iss'), ISS_YEARS, issYearLabel, issSum, '發行年度', d.catsIss);
+  sumTab($('tb9iss'), ISS_YEARS, esgYearLabel, issSum, '發行年度', d.catsIss);
   sumTab($('tb9mat'), MAT_YEARS, matYearLabel, matSum, '到期年度', d.catsMat);
-  $('q9note').textContent = `依櫃買中心永續發展債券名單，對照上櫃債券發行月報表與流通在外餘額月報表（${ISS.outMonth}）計算，新台幣計價，單位：億元。到期金額以流通在外餘額計，分期還本依還本方式拆到各年度。櫃買中心名單只列流通在外的債券，已到期的 ESG 債券可能未列入發行金額。點選圖上的年度，該圖下方列出該年度的 ESG 債券，再點一次即可收合。`;
+  $('q9note').textContent = `依櫃買中心永續發展債券名單，對照上櫃債券發行月報表與流通在外餘額月報表（${ISS.outMonth}）計算，新台幣計價，單位：億元。到期金額以流通在外餘額計，分期還本依還本方式拆到各年度。發行金額另含地方政府債，以及最近一期月報之後發行的 ESG 債券（依櫃買中心名單的發行金額，無到期資料，不列入到期金額）；不含轉換公司債。櫃買中心名單只列流通在外的債券，已到期的 ESG 債券可能未列入發行金額。點選圖上的年度，該圖下方列出該年度的 ESG 債券，再點一次即可收合。`;
   drawT9Sel(d); drawT9Top(d);
 }
 // ESG 類別標籤用與圖例相同的顏色
 const esgCol = {k:'cat',t:'ESG 類別',l:1,f:v=>v?`<span class="tag" style="margin-left:0;background:${ESG_COLOR[v]||'#888'};border-color:${ESG_COLOR[v]||'#888'};color:#fff;font-weight:600">${esc(ESG_SHORT[v]||v)}</span>`:''};
 const esgStdCol = {k:'std',t:'採用標準',l:1};
-function esgRow(code, extra){ return bondObj(code, Object.assign({cat:esgCat(code), std:ESG[code] ? ESG[code][1] : ''}, extra)); }
-function issRows9(list){ return list.map(r=>esgRow(r[0], {name:r[2], issuer:issuerName9(r), idate:r[5], term:r[6], cpn:r[4], amt:r[7], mat:matOf(r[5], r[6], r[8])})); }
-const base9 = [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:(v,r)=>esc(v) + subTag(r) + secTag(r.code)},esgCol,{k:'issuer',t:'發行人',l:1},{k:'idate',t:'發行日',l:1},{k:'mat',t:'到期日',l:1,f:v=>v||'無到期日'},
-  {k:'term',t:'年期',f:v=>v==null?'–':fN(v,2).replace(/\.?0+$/,'')+' 年'},{k:'cpn',t:'票面利率%',f:v=>fN(v,4)}];
+function esgRow(code, extra, over){ return Object.assign(bondObj(code, Object.assign({cat:esgCat(code), std:ESG[code] ? ESG[code][1] : ''}, extra)), over || {}); }
+function issRows9(list){ return list.map(r=>esgRow(r[0], {name:r[2], issuer:issuerName9(r), idate:r[5], term:r[6], cpn:r[4], amt:r[7], mat:matOf(r[5], r[6], r[8]), extra:!!r[9]}, r[9] ? {sub:false, subUnknown:false} : {})); }
+const base9 = [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:(v,r)=>esc(v) + subTag(r) + secTag(r.code)},esgCol,{k:'issuer',t:'發行人',l:1},{k:'idate',t:'發行日',l:1},{k:'mat',t:'到期日',l:1,f:(v,r)=>v||(r.extra?'–':'無到期日')},
+  {k:'term',t:'年期',f:v=>v==null?'–':fN(v,2).replace(/\.?0+$/,'')+' 年'},{k:'cpn',t:'票面利率%',f:v=>v==null?'–':fN(v,4)}];
 // 發行、到期各自的明細，顯示在各自的圖下方（半欄寬，金額欄放前面）
 function drawT9Sel(d){
   const [c0, c1, c2, ...rest] = base9;   // 代號、名稱、ESG 類別 | 發行人…
@@ -1544,7 +1553,7 @@ function drawT9Sel(d){
   if(SEL9.iss==null){ $('q9selIss').textContent = '點選上方圖表的年度，查看該年度發行的 ESG 債券'; ei.innerHTML = ''; }
   else {
     const rows = issRows9(d.iss[SEL9.iss]);
-    $('q9selIss').textContent = `${issYearLabel(SEL9.iss)} 發行的 ESG 債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
+    $('q9selIss').textContent = `${esgYearLabel(SEL9.iss)} 發行的 ESG 債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
     table(ei, [c0, c1, c2, {k:'amt',t:'發行金額(億)',f:fM}, ...rest, esgStdCol, guarCol, ...RATING_COLS], rows, {sort:'idate', sortDir:1});
   }
   if(SEL9.mat==null){ $('q9selMat').textContent = '點選上方圖表的年度，查看該年度到期的 ESG 債券'; em.innerHTML = ''; }
@@ -1557,15 +1566,15 @@ function drawT9Sel(d){
 function drawT9Top(d){
   // 年度按鈕（預設最近一年）
   const yb = $('q9topYear'), Y = TOP9Y;
-  yb.innerHTML = ISS_YEARS.slice().reverse().map(y=>`<button data-y="${y}" class="${y===Y?'on':''}">${esc(issYearLabel(y))}</button>`).join('');
+  yb.innerHTML = ISS_YEARS.slice().reverse().map(y=>`<button data-y="${y}" class="${y===Y?'on':''}">${esc(esgYearLabel(y))}</button>`).join('');
   yb.querySelectorAll('button').forEach(b=>b.onclick=()=>{ TOP9Y = +b.dataset.y; SEL9TOP = {year:null, issuer:null}; drawT9Top(d); });
   // 當年度前 5 大發行人
   const g = {}; d.iss[Y].forEach(r=>{ const k = issuerKey9(r), c = esgCat(r[0]); (g[k] = g[k] || {k, name:issuerName9(r), amt:0, n:0}); g[k].amt += r[7]||0; g[k].n++; g[k][c] = (g[k][c]||0) + (r[7]||0); });
   const tot = d.iss[Y].reduce((s,r)=>s+(r[7]||0),0), all = Object.values(g).sort((a,b)=>b.amt-a.amt), top = all.slice(0,5);
   top.forEach((x,i)=>{ x.rank = i+1; x.pct = tot ? x.amt/tot*100 : null; });
   const top5 = sum(top,'amt');
-  $('q9topInfo').textContent = tot ? `${issYearLabel(Y)} ESG 債券發行合計 ${fM(tot)} 億元（${d.iss[Y].length} 檔，${all.length} 家發行人）；前 5 大合計 ${fM(top5)} 億元，占 ${fN(top5/tot*100,1)}%。` : `${issYearLabel(Y)} 沒有符合所選類別的 ESG 債券發行。`;
-  const cats = d.catsIss.filter(c=>top.some(x=>x[c]));
+  $('q9topInfo').textContent = tot ? `${esgYearLabel(Y)} ESG 債券發行合計 ${fM(tot)} 億元（${d.iss[Y].length} 檔，${all.length} 家發行人）；前 5 大合計 ${fM(top5)} 億元，占 ${fN(top5/tot*100,1)}%。` : `${esgYearLabel(Y)} 沒有符合所選類別的 ESG 債券發行。`;
+  const cats = d.catsIss;   // 選取的類別一律列出（該年沒有的顯示 –）
   table($('q9top'), [{k:'rank',t:'名次',c:1},{k:'name',t:'發行人',l:1},{k:'n',t:'檔數'},{k:'amt',t:'發行金額(億)',f:fM},{k:'pct',t:'占當年比重%',f:v=>fN(v,1)},
     ...(cats.length > 1 ? cats.map(c=>({k:c,t:`<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${ESG_COLOR[c]};margin-right:4px"></span>${esc(ESG_SHORT[c]||c)}(億)`,f:v=>v?fM(v):'–'})) : [])],
     top, {noSort:true, rowClass:x=>SEL9TOP.issuer===x.k ? 'sel' : '',
@@ -1575,7 +1584,7 @@ function drawT9Top(d){
   if(!SEL9TOP.issuer){ $('q9topTitle').textContent = '點選上方的發行人，查看該年度發行的 ESG 債券'; el.innerHTML = ''; return; }
   const rows = issRows9(d.iss[SEL9TOP.year].filter(r=>issuerKey9(r)===SEL9TOP.issuer));
   if(!rows.length){ SEL9TOP = {year:null, issuer:null}; drawT9Top(d); return; }
-  $('q9topTitle').textContent = `${rows[0].issuer}　${issYearLabel(SEL9TOP.year)} 發行的 ESG 債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
+  $('q9topTitle').textContent = `${rows[0].issuer}　${esgYearLabel(SEL9TOP.year)} 發行的 ESG 債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
   table(el, base9.concat([{k:'amt',t:'發行金額(億)',f:fM}, esgStdCol, guarCol, ...RATING_COLS]), rows, {sort:'idate', sortDir:1});
 }
 // 可複選：點類別切換選取；「全部」或四類全選、全部取消時回到全部
