@@ -6,6 +6,7 @@
 <title>臺幣債券分析</title>
 <script src="data/data.js"></script>
 <script src="data/issue.js"></script>
+<script src="data/broker.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
@@ -14,6 +15,7 @@
   --head:#0f2742; --head-ink:#ffffff; --head-muted:rgba(255,255,255,.72);
   --accent:#1e4f8a; --accent-soft:#e9eff7; --hot:#1e4f8a; --cold:#98a2b0; --cmp:#b3bcc8;
   --yc-now:#1e4f8a; --yc-start:#e8891c; --yc-wk:#2e9e6a; --yc-mo:#c2417a;
+  --bk-buy:#5b8fd0; --bk-sell:#f0a35b; --bk-net:#1f2d3d;
   --corp:#13807a; --fin:#3f51a3; --up:#c92a2a; --down:#2b8a3e; --sub:#b7791f; --sub-bg:#fdf6e6;
   --th-bg:#eef1f5; --zebra:#f8f9fb; --line-strong:#cfd5de;
   --hot-bg:#e3ebf5; --cold-bg:#eef0f3; --sub-line:#e2c38a;
@@ -28,6 +30,7 @@
     --head:#0b1a2c; --head-ink:#ffffff; --head-muted:rgba(255,255,255,.68);
     --accent:#7fa8dc; --accent-soft:#1b2a3d; --hot:#7fa8dc; --cold:#7c8796; --cmp:#566170;
     --yc-now:#7fa8dc; --yc-start:#f2a64a; --yc-wk:#5cc493; --yc-mo:#e889b4;
+    --bk-buy:#5f8fcf; --bk-sell:#e39a52; --bk-net:#eef2f7;
     --corp:#4fbfb6; --fin:#8f9ce0; --up:#ff6b6b; --down:#69db7c; --sub:#e9b955; --sub-bg:rgba(233,185,85,.10);
     --th-bg:#1f2834; --zebra:#1b232e; --line-strong:#3a4554;
     --hot-bg:#1d2c40; --cold-bg:#252d38; --sub-line:#7a6232;
@@ -41,6 +44,7 @@
   --head:#0b1a2c; --head-ink:#ffffff; --head-muted:rgba(255,255,255,.68);
   --accent:#7fa8dc; --accent-soft:#1b2a3d; --hot:#7fa8dc; --cold:#7c8796; --cmp:#566170;
   --yc-now:#7fa8dc; --yc-start:#f2a64a; --yc-wk:#5cc493; --yc-mo:#e889b4;
+  --bk-buy:#5f8fcf; --bk-sell:#e39a52; --bk-net:#eef2f7;
   --corp:#4fbfb6; --fin:#8f9ce0; --up:#ff6b6b; --down:#69db7c; --sub:#e9b955; --sub-bg:rgba(233,185,85,.10);
   --th-bg:#1f2834; --zebra:#1b232e; --line-strong:#3a4554;
   --hot-bg:#1d2c40; --cold-bg:#252d38; --sub-line:#7a6232;
@@ -253,6 +257,7 @@ body.pdf-mode .chartbox{height:280px}
     <button data-t="t3">公司債/金融債</button>
     <button data-t="t6">發行/到期概況</button>
     <button data-t="t4">債券成交查詢</button>
+    <button data-t="t8">成交統計</button>
     <button data-t="t5">成交明細</button>
     <button data-t="t7">債券查詢</button>
   </nav>
@@ -378,6 +383,33 @@ body.pdf-mode .chartbox{height:280px}
     <div class="card">
       <h2>歷史成交紀錄</h2>
       <div class="tw scroll" id="tb4"></div>
+    </div>
+  </section>
+
+  <!-- 8 成交統計：券商買賣斷排名（月） -->
+  <section class="tab" id="t8">
+    <div class="card">
+      <h2>券商買賣斷月排名：前 10 大買超／賣超</h2>
+      <p class="note">資料來源：櫃買中心「債券營業金額月統計表（買賣斷排名）」，新台幣計價的公債、公司債與金融債；買進、賣出為等殖系統＋處所議價＋遠期交易合計，買(賣)超＝買進－賣出。單位：億元。點選券商可在下方查看該券商各月的買賣超。</p>
+      <div class="row">
+        <label class="c">資料月份 <select id="selBrkMonth"></select></label>
+        <span class="note" id="brkMonthNote" style="margin:0"></span>
+      </div>
+      <div class="grid2">
+        <div><h3 class="sub-h">前 10 大買超</h3><div class="tw" id="tbBrkBuy"></div></div>
+        <div><h3 class="sub-h">前 10 大賣超</h3><div class="tw" id="tbBrkSell"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>單一券商買賣超</h2>
+      <div class="row">
+        <label class="c">券商 <select id="selBrk" style="max-width:260px"></select></label>
+        <label class="c">期間 <select id="selBrkRange"><option value="3">近 3 個月</option><option value="6">近 6 個月</option><option value="ytd">今年以來</option><option value="12">近 12 個月</option><option value="24">近 24 個月</option><option value="36" selected>近 36 個月</option><option value="60">近 60 個月</option><option value="0">全部</option></select></label>
+      </div>
+      <div class="seg" id="segBrk"><button class="on" data-v="all">全部</button><button data-v="buy">買進</button><button data-v="sell">賣出</button><button data-v="net">買(賣)超</button></div>
+      <div id="brkInfo" class="note"></div>
+      <div class="chartbox" style="height:300px"><canvas id="cBrk"></canvas></div>
+      <div class="tw scroll" id="tbBrk"></div>
     </div>
   </section>
 
@@ -1078,6 +1110,79 @@ function bondInfoHtml(code){
   return h;
 }
 
+// ================= TAB 8 成交統計（券商買賣斷月排名）=================
+// broker.js: months = [{m:'YYYY-MM', r:[[code,name,ebtsBuy,ebtsSell,otcBuy,otcSell,fwdBuy,fwdSell],...]}], amounts in million TWD
+const BRK = (window.BROKER_DATA && window.BROKER_DATA.months) || [];
+const fBk = v => v==null||isNaN(v) ? '–' : (v/100).toLocaleString('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2});   // million -> 億
+const fBkNet = v => v==null||isNaN(v) ? '–' : `<span class="${v>0?'down':v<0?'up':''}">${v>0?'+':''}${fBk(v)}</span>`;
+const brkRows = mo => mo.r.map(x=>{ const buy = x[2]+x[4]+x[6], sell = x[3]+x[5]+x[7]; return {code:x[0], name:x[1], buy, sell, net:buy-sell, eb:x[2], es:x[3], ob:x[4], os:x[5]}; });
+const BRK_NAME = {}; BRK.forEach(mo=>mo.r.forEach(x=>{ BRK_NAME[x[0]] = x[1]; }));   // latest name per code
+let SEL8 = null;   // broker code for the single-broker chart
+let SEG8 = 'all';  // single-broker chart view: all / buy / sell / net
+function renderT8(){
+  if(!BRK.length){ $('brkMonthNote').textContent = '找不到券商買賣斷資料（data/broker.js）。'; return; }
+  const ms = $('selBrkMonth');
+  if(!ms.options.length) BRK.slice().reverse().forEach(mo=>{ const o = document.createElement('option'); o.value = mo.m; o.textContent = mo.m.replace('-','/'); ms.appendChild(o); });
+  const mo = BRK.find(x=>x.m===ms.value) || BRK[BRK.length-1];
+  const rows = brkRows(mo);
+  const tot = rows.reduce((s,r)=>s+r.buy+r.sell,0);
+  $('brkMonthNote').textContent = `${mo.m.replace('-','/')}：共 ${rows.length} 家券商，買賣斷合計 ${fBk(tot)} 億元（買進＋賣出）`;
+  const cols = [{k:'rk',t:'名次',c:1},{k:'name',t:'券商',l:1,f:(v,r)=>`${esc(r.code)} ${esc(v)}`},{k:'buy',t:'買進',f:fBk},{k:'sell',t:'賣出',f:fBk},{k:'net',t:'買(賣)超',f:fBkNet}];
+  const pick = r=>{ SEL8 = r.code; $('selBrk').value = r.code; drawBroker(); $('cBrk').scrollIntoView({behavior:'smooth', block:'center'}); };
+  const buyTop = rows.filter(r=>r.net>0).sort((a,b)=>b.net-a.net).slice(0,10).map((r,i)=>Object.assign({rk:i+1}, r));
+  const sellTop = rows.filter(r=>r.net<0).sort((a,b)=>a.net-b.net).slice(0,10).map((r,i)=>Object.assign({rk:i+1}, r));
+  table($('tbBrkBuy'), cols, buyTop, {noSort:true, onClick:pick, rowClass:r=>r.code===SEL8?'sel':''});
+  table($('tbBrkSell'), cols, sellTop, {noSort:true, onClick:pick, rowClass:r=>r.code===SEL8?'sel':''});
+  // broker list: by total volume over the whole period, biggest first
+  const bs = $('selBrk');
+  if(!bs.options.length){
+    const vol = {}; BRK.forEach(m=>m.r.forEach(x=>{ vol[x[0]] = (vol[x[0]]||0) + x[2]+x[3]+x[4]+x[5]+x[6]+x[7]; }));
+    Object.keys(vol).sort((a,b)=>vol[b]-vol[a]).forEach(c=>{ const o = document.createElement('option'); o.value = c; o.textContent = `${c} ${BRK_NAME[c]}`; bs.appendChild(o); });
+  }
+  if(!SEL8) SEL8 = (buyTop[0] || sellTop[0] || {}).code || bs.options[0].value;
+  bs.value = SEL8;
+  drawBroker();
+}
+function drawBroker(){
+  // 期間：近 N 個月、今年以來（最新資料月份所在年度的 1 月起）、全部
+  const rv = $('selBrkRange').value, lastY = BRK[BRK.length-1].m.slice(0,4);
+  const list = rv==='ytd' ? BRK.filter(mo=>mo.m.startsWith(lastY)) : (+rv ? BRK.slice(-(+rv)) : BRK);
+  const rows = list.map(mo=>{ const all = brkRows(mo); const x = all.find(r=>r.code===SEL8);
+    const rk = x ? all.slice().sort((a,b)=>b.net-a.net).findIndex(r=>r.code===SEL8) + 1 : null;
+    return {m:mo.m, buy:x?x.buy:0, sell:x?x.sell:0, net:x?x.net:0, eb:x?x.eb:0, es:x?x.es:0, ob:x?x.ob:0, os:x?x.os:0, rk, cnt:all.length, has:!!x}; });
+  const sb = sum(rows,'buy'), ss = sum(rows,'sell');
+  $('brkInfo').innerHTML = `<b>${esc(SEL8)} ${esc(BRK_NAME[SEL8]||'')}</b>　${esc(rows[0].m.replace('-','/'))}～${esc(rows[rows.length-1].m.replace('-','/'))}：買進 ${fBk(sb)} 億元、賣出 ${fBk(ss)} 億元，合計買(賣)超 ${fBkNet(sb-ss)} 億元`;
+  // 顯示項目（單選）：全部＝買進（藍，零軸以上）＋賣出（橘，零軸以下）＋買(賣)超折線；
+  //                   買進／賣出＝該項直條；買(賣)超＝綠（買超）／紅（賣超）直條
+  const view = SEG8;
+  const netColors = rows.map(r=>r.net>=0?css('--down'):css('--up'));   // 買超＝綠、賣超＝紅
+  let sets;
+  if(view==='buy') sets = [{type:'bar', label:'買進', data:rows.map(r=>r.buy/100), backgroundColor:css('--bk-buy')}];
+  else if(view==='sell') sets = [{type:'bar', label:'賣出', data:rows.map(r=>r.sell/100), backgroundColor:css('--bk-sell')}];
+  else if(view==='net') sets = [{type:'bar', label:'買(賣)超', data:rows.map(r=>r.net/100), backgroundColor:netColors}];
+  else sets = [
+    {type:'bar', label:'買進', data:rows.map(r=>r.buy/100), backgroundColor:css('--bk-buy'), stack:'bs', order:2},
+    {type:'bar', label:'賣出', data:rows.map(r=>-r.sell/100), backgroundColor:css('--bk-sell'), stack:'bs', order:2},
+    {type:'line', label:'買(賣)超', data:rows.map(r=>r.net/100), borderColor:css('--bk-net'), backgroundColor:css('--bk-net'), borderWidth:2,
+      pointRadius:rows.length>60?2:3, pointBackgroundColor:netColors, pointBorderColor:netColors, order:1}];
+  const yTitle = view==='all' ? '億元（賣出以負值表示）' : view==='net' ? '億元（買超為正、賣超為負）' : '億元';
+  document.querySelectorAll('#segBrk button').forEach(b=>{ b.classList.toggle('on', b.dataset.v===view); b.onclick = ()=>{ SEG8 = b.dataset.v; drawBroker(); }; });
+  chart('cBrk', {data:{labels:rows.map(r=>r.m.replace('-','/')), datasets:sets},
+    options:{interaction:{mode:'index', intersect:false},
+      plugins:{legend:{display:view==='all', labels:{generateLabels:ch=>Chart.defaults.plugins.legend.labels.generateLabels(ch).map(l=>{ if(l.text==='買(賣)超'){ l.fillStyle = css('--bk-net'); l.strokeStyle = css('--bk-net'); } return l; })}},
+        tooltip:{callbacks:{label:c=>{ const v = c.raw, s = Math.abs(v).toLocaleString('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2});
+        return c.dataset.label==='買(賣)超' ? `買(賣)超：${v>0?'+':v<0?'−':''}${s} 億元` : `${c.dataset.label}：${s} 億元`; }}}},
+      scales:{x:{stacked:true, ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:12},grid:{display:false}},
+              y:{stacked:true, beginAtZero:true, title:{display:true,text:yTitle,color:css('--muted')},ticks:{color:css('--muted')},
+                 grid:{color:c=>c.tick && c.tick.value===0 ? css('--muted') : css('--line')}}}}});
+  const cols = [{k:'m',t:'月份',l:1,f:v=>esc(v.replace('-','/'))},{k:'eb',t:'等殖 買進',f:fBk},{k:'es',t:'等殖 賣出',f:fBk},{k:'ob',t:'處所 買進',f:fBk},{k:'os',t:'處所 賣出',f:fBk},
+    {k:'buy',t:'買進合計',f:fBk},{k:'sell',t:'賣出合計',f:fBk},{k:'net',t:'買(賣)超',f:fBkNet},{k:'rk',t:'買超名次',f:(v,r)=>v?`${v} / ${r.cnt}`:'<span class="dim">當月無交易</span>'}];
+  table($('tbBrk'), cols, rows, {sort:'m', sortDir:-1});
+}
+$('selBrkMonth').onchange = renderT8;
+$('selBrk').onchange = ()=>{ SEL8 = $('selBrk').value; renderT8(); };
+$('selBrkRange').onchange = drawBroker;
+
 // ================= TAB 7 債券查詢 =================
 function renderT7(){
   const q = $('q7').value.trim();
@@ -1192,6 +1297,8 @@ const MAT_YEARS = [Y0, Y0+1, Y0+2, Y0+3, Y0+4, Y0+5];
 const lastIssueMonth = () => { let mx = ''; (ISS.issued||[]).forEach(r=>{ if(r[5] > mx) mx = r[5]; }); return mx; };
 const issYearLabel = y => { if(y!==Y0) return String(y); const lm = lastIssueMonth(); return lm && +lm.slice(0,4)===Y0 ? `${y}（1–${+lm.slice(5,7)}月）` : String(y); };
 const matYearLabel = y => y===Y0 && ISS.outMonth && +ISS.outMonth.slice(0,4)===Y0 ? `${y}（${+ISS.outMonth.slice(5,7)+1}–12月）` : String(y);
+// adds space under the legend so the total written above the tallest bar never touches it
+const legendGap = {id:'legendGap', beforeInit(ch){ const lg = ch.legend; if(!lg || lg._gapPatched) return; const fit = lg.fit; lg.fit = function(){ fit.call(this); this.height += 20; }; lg._gapPatched = true; }};
 // writes the stack total (億元, integer) above each bar; follows the legend when a type is hidden
 const stackTotals = {id:'stackTotals', afterDatasetsDraw(ch){
   const {ctx} = ch, n = ch.data.labels.length, vis = ch.data.datasets.map((d,i)=>i).filter(i=>ch.isDatasetVisible(i));
@@ -1217,8 +1324,8 @@ function stackChart(id, years, labelOf, sums, only, byTerm){
     datasets = order.map((b,i)=>({label:b, data:years.map(y=>((byTerm[y][t]||{})[b]||0)/100), backgroundColor:TERM_COLOR[b], stack:'s'}))
       .filter(d=>d.data.some(v=>v>0));
   } else datasets = types.map(t=>({label:TYPE_NAME[t], data:years.map(y=>sums[y][t]/100), backgroundColor:typeColor(t), stack:'s'}));
-  chart(id, {type:'bar', plugins:[stackTotals], data:{labels:years.map(labelOf), datasets},
-    options:{layout:{padding:{top:22}}, scales:{x:{stacked:true,ticks:{color:css('--muted')},grid:{display:false}},y:{stacked:true,title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+  chart(id, {type:'bar', plugins:[stackTotals, legendGap], data:{labels:years.map(labelOf), datasets},
+    options:{layout:{padding:{top:22}}, scales:{x:{stacked:true,ticks:{color:css('--muted')},grid:{display:false}},y:{stacked:true,grace:'12%',title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
 }
 function sumTable(el, years, labelOf, sums){
   const rows = years.map(y=>({y:labelOf(y), G:sums[y].G, F:sums[y].F, C:sums[y].C, all:sums[y].G+sums[y].F+sums[y].C}));
@@ -1304,8 +1411,8 @@ function drawCompany(){
   const issSets = termSets(ISS_YEARS, y=>cd.iss[y], r=>r[6], r=>r[7], ISS_YEARS.length);
   const matSets = termSets(MAT_YEARS, y=>cd.mat[y], p=>p.o[6], p=>p.amt, MAT_YEARS.length);
   const blank = n => [{label:'無資料', data:new Array(n).fill(0), backgroundColor:css('--line'), stack:'s'}];
-  chart('c6coIss', {type:'bar', plugins:[stackTotals], data:{labels:ISS_YEARS.map(y=>twoLine(issYearLabel(y))), datasets:issSets.length ? issSets : blank(ISS_YEARS.length)}, options:coOpts('iss', ISS_YEARS)});
-  chart('c6coMat', {type:'bar', plugins:[stackTotals], data:{labels:MAT_YEARS.map(y=>twoLine(matYearLabel(y))), datasets:matSets.length ? matSets : blank(MAT_YEARS.length)}, options:coOpts('mat', MAT_YEARS)});
+  chart('c6coIss', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:ISS_YEARS.map(y=>twoLine(issYearLabel(y))), datasets:issSets.length ? issSets : blank(ISS_YEARS.length)}, options:coOpts('iss', ISS_YEARS)});
+  chart('c6coMat', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:MAT_YEARS.map(y=>twoLine(matYearLabel(y))), datasets:matSets.length ? matSets : blank(MAT_YEARS.length)}, options:coOpts('mat', MAT_YEARS)});
   drawCompanyTable(cd);
 }
 function drawCompanyTable(cd){
@@ -1340,7 +1447,7 @@ document.querySelectorAll('#q6quick button[data-tax]').forEach(b=>b.onclick=()=>
 $('q6co').addEventListener('keydown', e=>{ if(e.key==='Enter') queryCompany(); });
 $('q6bank').onchange = drawBank;
 
-const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:renderT4, t5:renderT5, t6:renderT6, t7:renderT7};
+const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:renderT4, t5:renderT5, t6:renderT6, t7:renderT7, t8:renderT8};
 const WEEK = '日一二三四五六';
 function updateAsof(){
   const d = selDate.value, wd = WEEK[new Date(d+'T00:00:00').getDay()];
