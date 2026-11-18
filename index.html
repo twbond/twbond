@@ -13,10 +13,12 @@
   --bg:#f3f5f8; --card:#ffffff; --ink:#1a2433; --muted:#5f6b7a; --line:#e7eaef;
   --head:#0f2742; --head-ink:#ffffff; --head-muted:rgba(255,255,255,.72);
   --accent:#1e4f8a; --accent-soft:#e9eff7; --hot:#1e4f8a; --cold:#98a2b0; --cmp:#b3bcc8;
+  --yc-now:#1e4f8a; --yc-start:#e8891c; --yc-wk:#2e9e6a; --yc-mo:#c2417a;
   --corp:#13807a; --fin:#3f51a3; --up:#c92a2a; --down:#2b8a3e; --sub:#b7791f; --sub-bg:#fdf6e6;
   --th-bg:#eef1f5; --zebra:#f8f9fb; --line-strong:#cfd5de;
   --hot-bg:#e3ebf5; --cold-bg:#eef0f3; --sub-line:#e2c38a;
   --sec:#3f51a3; --sec-bg:#eef0fa; --sec-line:#b8c0e4;
+  --esg:#2f7d32; --esg-bg:#eaf5ea; --esg-line:#a9d3ab;
   --q-g:#1e4f8a; --q-f:#e8891c; --q-c:#2e9e6a;
   --rec-bg:#eaf1fa; --mkt-e-bg:#f5f8fd; --mkt-o-bg:#f1f9f8; --mkt-o-tag:#dcefed;
 }
@@ -25,10 +27,12 @@
     --bg:#10151c; --card:#18202a; --ink:#e4e8ee; --muted:#9aa5b4; --line:#28313d;
     --head:#0b1a2c; --head-ink:#ffffff; --head-muted:rgba(255,255,255,.68);
     --accent:#7fa8dc; --accent-soft:#1b2a3d; --hot:#7fa8dc; --cold:#7c8796; --cmp:#566170;
+    --yc-now:#7fa8dc; --yc-start:#f2a64a; --yc-wk:#5cc493; --yc-mo:#e889b4;
     --corp:#4fbfb6; --fin:#8f9ce0; --up:#ff6b6b; --down:#69db7c; --sub:#e9b955; --sub-bg:rgba(233,185,85,.10);
     --th-bg:#1f2834; --zebra:#1b232e; --line-strong:#3a4554;
     --hot-bg:#1d2c40; --cold-bg:#252d38; --sub-line:#7a6232;
     --sec:#9fabe8; --sec-bg:rgba(143,156,224,.12); --sec-line:#3d4878; --q-g:#6ea0e0; --q-f:#f2a64a; --q-c:#5cc493;
+    --esg:#7fd283; --esg-bg:rgba(127,210,131,.12); --esg-line:#2f6b33;
     --rec-bg:#1a2638; --mkt-e-bg:#1b2433; --mkt-o-bg:#18292a; --mkt-o-tag:#1d3533;
   }
 }
@@ -36,10 +40,12 @@
   --bg:#10151c; --card:#18202a; --ink:#e4e8ee; --muted:#9aa5b4; --line:#28313d;
   --head:#0b1a2c; --head-ink:#ffffff; --head-muted:rgba(255,255,255,.68);
   --accent:#7fa8dc; --accent-soft:#1b2a3d; --hot:#7fa8dc; --cold:#7c8796; --cmp:#566170;
+  --yc-now:#7fa8dc; --yc-start:#f2a64a; --yc-wk:#5cc493; --yc-mo:#e889b4;
   --corp:#4fbfb6; --fin:#8f9ce0; --up:#ff6b6b; --down:#69db7c; --sub:#e9b955; --sub-bg:rgba(233,185,85,.10);
   --th-bg:#1f2834; --zebra:#1b232e; --line-strong:#3a4554;
   --hot-bg:#1d2c40; --cold-bg:#252d38; --sub-line:#7a6232;
   --sec:#9fabe8; --sec-bg:rgba(143,156,224,.12); --sec-line:#3d4878; --q-g:#6ea0e0; --q-f:#f2a64a; --q-c:#5cc493;
+  --esg:#7fd283; --esg-bg:rgba(127,210,131,.12); --esg-line:#2f6b33;
   --rec-bg:#1a2638; --mkt-e-bg:#1b2433; --mkt-o-bg:#18292a; --mkt-o-tag:#1d3533;
 }
 *{box-sizing:border-box}
@@ -98,6 +104,15 @@ tbody tr:hover td{background:var(--accent-soft)}
 .tag.cold{background:var(--cold-bg);color:var(--muted)}
 .tag.sub{background:var(--sub-bg);color:var(--sub);border:1px solid var(--sub-line);margin-left:6px}
 .tag.sec{background:var(--sec-bg);color:var(--sec);border:1px solid var(--sec-line);margin-left:6px}
+.tag.esg{background:var(--esg-bg);color:var(--esg);border:1px solid var(--esg-line);margin-left:6px}
+/* bond basic-info card */
+.binfo{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:8px}
+.binfo div{padding:8px 12px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-width:0}
+.binfo dt{font-size:12px;color:var(--muted);margin:0 0 2px}
+.binfo dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.binfo .wide{grid-column:1/-1}
+.bhead{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 2px}
+.bhead b{font-size:16px}
 td .rt{color:var(--muted);font-size:12px;font-weight:400}
 td .who{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:0 5px;margin-left:4px;font-weight:400}
 td .who.g{color:var(--sec);border-color:var(--sec-line);background:var(--sec-bg)}
@@ -237,7 +252,8 @@ body.pdf-mode .chartbox{height:280px}
     <button data-t="t2">公債</button>
     <button data-t="t3">公司債/金融債</button>
     <button data-t="t6">發行/到期概況</button>
-    <button data-t="t4">個別債券查詢</button>
+    <button data-t="t7">債券查詢</button>
+    <button data-t="t4">債券成交查詢</button>
     <button data-t="t5">成交明細</button>
   </nav>
 </header>
@@ -323,7 +339,7 @@ body.pdf-mode .chartbox{height:280px}
     <div class="card">
       <h2>當日公司債/金融債成交明細</h2>
       <p class="note">利差＝處所行情表公布的「與公債殖利率之差異點」（bp）。成交面額單位：億元。評等取自公開資訊觀測站，分兩欄：「債券評等」為債券本身的評等，沒有則顯示「--」；「發行人/保證人評等」對有擔保債券顯示保證人（擔保行）的評等，其餘顯示發行人的評等，並以標籤註明。點欄位名稱可依評等高低排序。</p>
-      <p class="legend"><span class="tag sub" style="margin-left:0">次順位</span> 底色標示的是次順位債券，依公開資訊觀測站登載的債券全名與擔保情形判斷。<span class="tag unk">順位未確認</span> 表示該債券已到期下櫃，無法查詢。<span class="tag sec">O銀保</span> 表示有擔保債券，標籤為擔保機構簡稱加「保」（例如第一商業銀行保證＝一銀保；滑鼠移到標籤上可看擔保機構全名；查不到擔保機構時顯示「有擔」），依公開資訊觀測站資料判斷；與次順位同時符合時兩個標籤並列。</p>
+      <p class="legend"><span class="tag sub" style="margin-left:0">次順位</span> 底色標示的是次順位債券，依公開資訊觀測站登載的債券全名與擔保情形判斷。<span class="tag unk">順位未確認</span> 表示該債券已到期下櫃，無法查詢。<span class="tag sec">O銀保</span> 表示有擔保債券，標籤為擔保機構簡稱加「保」（例如第一商業銀行保證＝一銀保；滑鼠移到標籤上可看擔保機構全名；查不到擔保機構時顯示「有擔」），依公開資訊觀測站資料判斷；與次順位同時符合時兩個標籤並列。<span class="tag esg">綠色債券</span> 表示 ESG（永續發展）債券，依櫃買中心「永續發展債券」名單標示類別：綠色債券、社會責任債券、可持續發展債券、永續連結債券（可持續發展連結債券）。</p>
       <div class="tw scroll" id="tbCorpDay"></div>
     </div>
     <div class="card">
@@ -350,7 +366,7 @@ body.pdf-mode .chartbox{height:280px}
   <!-- 4 個別債券 -->
   <section class="tab" id="t4">
     <div class="card">
-      <h2>個別債券查詢</h2>
+      <h2>債券成交查詢</h2>
       <div class="row">
         <input type="text" id="q4" list="dl4" placeholder="輸入代號或名稱，例如 A15109R 或 台電">
         <datalist id="dl4"></datalist>
@@ -362,6 +378,20 @@ body.pdf-mode .chartbox{height:280px}
     <div class="card">
       <h2>歷史成交紀錄</h2>
       <div class="tw scroll" id="tb4"></div>
+    </div>
+  </section>
+
+  <!-- 7 債券查詢：基本資料 -->
+  <section class="tab" id="t7">
+    <div class="card">
+      <h2>債券查詢</h2>
+      <p class="note">輸入債券代號（或名稱），顯示債券基本資料，包含發行人、發行／到期日、票面利率、發行金額、流通在外餘額、還本方式、擔保、次順位、ESG 類別與信用評等。</p>
+      <div class="row">
+        <input type="text" id="q7" list="dl7" placeholder="輸入債券代號，例如 B903II 或 A15109R" style="width:340px;max-width:100%">
+        <datalist id="dl7"></datalist>
+        <button class="btn" id="b7">查詢</button>
+      </div>
+      <div id="info7"></div>
     </div>
   </section>
 
@@ -388,6 +418,13 @@ body.pdf-mode .chartbox{height:280px}
       <div class="row">
         <input type="text" id="q6co" placeholder="統一編號，例如 22099131（或公司名稱、股票代號）" style="width:340px;max-width:100%">
         <button class="btn" id="b6co">查詢</button>
+      </div>
+      <div class="row" id="q6quick" style="align-items:center">
+        <span class="note" style="margin:0">常用公司：</span>
+        <button class="btn" data-tax="03707901" title="台灣中油股份有限公司">中油</button>
+        <button class="btn" data-tax="04541302" title="鴻海精密工業股份有限公司">鴻海</button>
+        <button class="btn" data-tax="03795904" title="台灣電力股份有限公司">台電</button>
+        <button class="btn" data-tax="22099131" title="台灣積體電路製造股份有限公司">台積電</button>
       </div>
       <div id="q6coInfo" class="note"></div>
       <div id="q6coBody" style="display:none">
@@ -418,8 +455,13 @@ body.pdf-mode .chartbox{height:280px}
         <input type="text" id="f5Q" placeholder="搜尋代號或名稱">
         <button class="btn" id="b5">匯出 Excel（CSV）</button>
       </div>
-      <p class="legend"><span class="tag sub" style="margin-left:0">次順位</span> 底色標示的是次順位債券，依公開資訊觀測站登載的債券全名與擔保情形判斷。<span class="tag unk">順位未確認</span> 表示該債券已到期下櫃，無法查詢。<span class="tag sec">O銀保</span> 表示有擔保債券，標籤為擔保機構簡稱加「保」（例如第一商業銀行保證＝一銀保；滑鼠移到標籤上可看擔保機構全名；查不到擔保機構時顯示「有擔」），依公開資訊觀測站資料判斷；與次順位同時符合時兩個標籤並列。</p>
+      <p class="legend"><span class="tag sub" style="margin-left:0">次順位</span> 底色標示的是次順位債券，依公開資訊觀測站登載的債券全名與擔保情形判斷。<span class="tag unk">順位未確認</span> 表示該債券已到期下櫃，無法查詢。<span class="tag sec">O銀保</span> 表示有擔保債券，標籤為擔保機構簡稱加「保」（例如第一商業銀行保證＝一銀保；滑鼠移到標籤上可看擔保機構全名；查不到擔保機構時顯示「有擔」），依公開資訊觀測站資料判斷；與次順位同時符合時兩個標籤並列。<span class="tag esg">綠色債券</span> 表示 ESG（永續發展）債券，依櫃買中心「永續發展債券」名單標示類別：綠色債券、社會責任債券、可持續發展債券、永續連結債券（可持續發展連結債券）。</p>
       <div class="tw scroll" id="tb5"></div>
+    </div>
+    <div class="card" id="card5info" style="display:none">
+      <h2>債券基本資料</h2>
+      <p class="note">點選上方明細的任一筆，會在這裡顯示該債券的基本資料；再點一次同一筆即可收合。</p>
+      <div id="info5"></div>
     </div>
   </section>
 </main>
@@ -485,7 +527,13 @@ const guarShort = full => {
 const secLabel = code => !SECURED.has(code) ? '' : (GUARS[code] ? guarShort(GUARS[code]) + '保' : '有擔');
 const secTag = code => { const s = secLabel(code); return s ? `<span class="tag sec" title="${esc(GUARS[code] ? '擔保機構：' + GUARS[code] : '有擔保債券')}">${esc(s)}</span>` : ''; };
 const secText = r => (r.type==='公司債'||r.type==='金融債') ? (SECURED.has(r.code) ? secLabel(r.code) : r.subUnknown ? '未確認' : '否') : '';
-const nameCell = (v,r) => esc(v) + subTag(r) + secTag(r.code);
+// ESG (sustainability) bonds: TPEx 永續發展債券 list — green / social / sustainability / sustainability-linked
+const ESG = DATA.esg || {};                  // code -> [category, standard]
+const ESG_SHORT = {'綠色債券':'綠色債券','社會責任債券':'社會責任債券','可持續發展債券':'可持續發展債券','可持續發展連結債券':'永續連結債券'};
+const esgLabel = code => { const e = ESG[code]; return e ? (ESG_SHORT[e[0]] || e[0] || 'ESG') : ''; };
+const esgTag = code => { const e = ESG[code]; return e ? `<span class="tag esg" title="${esc('櫃買中心永續發展債券：' + e[0] + (e[1] ? '（採用標準 ' + e[1] + '）' : ''))}">${esc(esgLabel(code))}</span>` : ''; };
+const esgText = code => ESG[code] ? ESG[code][0] : '';
+const nameCell = (v,r) => esc(v) + subTag(r) + secTag(r.code) + esgTag(r.code);
 // credit ratings from MOPS, shown in two columns:
 //   債券評等            : the bond's own rating, "--" when it has none
 //   發行人/保證人評等    : the guarantor's rating for secured bonds (marked 保證人), otherwise the issuer's (marked 發行人)
@@ -537,15 +585,20 @@ function recs(day){
 // ---------- controls ----------
 const selDate = $('selDate'), selRange = $('selRange');
 DAYS.slice().reverse().forEach(d=>{ const o=document.createElement('option'); o.value=o.textContent=d.d; selDate.appendChild(o); });
-// the date is typed (default: today); the page shows the latest trading day on or before it (hidden #selDate holds that day)
+// the date is typed; it defaults to the latest day that has data. A date without data (holiday, or today before
+// TPEx publishes) is replaced by the latest trading day before it, and the box shows that day (hidden #selDate holds it)
 const selDateIn = $('selDateIn');
 const todayIso = (()=>{ const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
-selDateIn.min = DAYS[0].d; selDateIn.max = todayIso; selDateIn.value = todayIso;
+// today's file is "partial" while TPEx has published only part of the day's data: treat today as not yet updated
+const DATA_DAYS = DAYS.filter(d=>!(d.partial && d.d===todayIso));
+const lastDataDay = (DATA_DAYS[DATA_DAYS.length-1] || DAYS[DAYS.length-1]).d;
+selDateIn.min = DAYS[0].d; selDateIn.max = todayIso; selDateIn.value = lastDataDay;
 function applyDate(){
-  const v = selDateIn.value || todayIso;
-  const c = DAYS.filter(d=>d.d <= v), eff = c.length ? c[c.length-1].d : DAYS[0].d;
+  const v = selDateIn.value || lastDataDay;
+  const c = DATA_DAYS.filter(d=>d.d <= v), eff = c.length ? c[c.length-1].d : DATA_DAYS[0].d;
   selDate.value = eff;
-  $('dateNote').textContent = eff !== v ? `（${v} 無成交資料，顯示 ${eff}）` : '';
+  if(eff !== v){ selDateIn.value = eff; $('dateNote').textContent = `（${v} 無成交資料或尚未更新，已改為前一個有資料的日期 ${eff}）`; }
+  else $('dateNote').textContent = '';
 }
 applyDate();
 const curDay = () => BY_DATE[selDate.value];
@@ -693,10 +746,10 @@ function renderT1(){
   const dayBefore = (n, unit) => { const dt = new Date(day.d); if(unit==='d') dt.setDate(dt.getDate()-n); else dt.setMonth(dt.getMonth()-n); const s = dt.toISOString().slice(0,10); const c = DAYS.filter(x=>x.d<=s); return c[c.length-1]; };
   const curvePts = dd => dd ? TENORS.map(t=>{ const b=(dd.b||[]).find(x=>x[0]===t); return b && b[2]!=null ? {x:t, y:b[2], code:b[1]} : null; }).filter(Boolean) : [];
   const wk = dayBefore(7,'d'), mo = dayBefore(1,'m');
-  const ds = [{type:'line', label:`${day.d}（${single?'資料日期':'區間結束日'}）`, data:curvePts(day), borderColor:css('--hot'), backgroundColor:css('--hot'), borderWidth:2.4, pointRadius:4, tension:0.25}];
-  if(!single && RD[0]!==wk && RD[0]!==mo) ds.push({type:'line', label:`${RD[0].d}（區間起始日）`, data:curvePts(RD[0]), borderColor:css('--fin'), backgroundColor:css('--fin'), borderWidth:1.8, pointRadius:3, tension:0.25});
-  if(wk) ds.push({type:'line', label:`${wk.d}（約 1 週前）`, data:curvePts(wk), borderColor:css('--cold'), backgroundColor:css('--cold'), borderWidth:1.5, borderDash:[5,3], pointRadius:3, tension:0.25});
-  if(mo) ds.push({type:'line', label:`${mo.d}（約 1 個月前）`, data:curvePts(mo), borderColor:css('--cmp'), backgroundColor:css('--cmp'), borderWidth:1.5, borderDash:[2,3], pointRadius:3, tension:0.25});
+  const ds = [{type:'line', label:`${day.d}（${single?'資料日期':'區間結束日'}）`, data:curvePts(day), borderColor:css('--yc-now'), backgroundColor:css('--yc-now'), borderWidth:2.6, pointRadius:4, tension:0.25}];
+  if(!single && RD[0]!==wk && RD[0]!==mo) ds.push({type:'line', label:`${RD[0].d}（區間起始日）`, data:curvePts(RD[0]), borderColor:css('--yc-start'), backgroundColor:css('--yc-start'), borderWidth:1.8, pointRadius:3, tension:0.25});
+  if(wk) ds.push({type:'line', label:`${wk.d}（約 1 週前）`, data:curvePts(wk), borderColor:css('--yc-wk'), backgroundColor:css('--yc-wk'), borderWidth:2, borderDash:[5,3], pointRadius:3, tension:0.25});
+  if(mo) ds.push({type:'line', label:`${mo.d}（約 1 個月前）`, data:curvePts(mo), borderColor:css('--yc-mo'), backgroundColor:css('--yc-mo'), borderWidth:2, borderDash:[2,3], pointRadius:3, tension:0.25});
   chart('c1y', {data:{datasets:ds}, options:{
     interaction:{mode:'nearest', intersect:true},
     plugins:{legend:{labels:{color:css('--muted'),boxWidth:12}}, tooltip:{callbacks:{label:c=>{ const p=c.raw; return p.name ? `${p.code} ${p.name}（${p.mkt}）剩餘 ${p.x} 年：${p.y.toFixed(4)}%` : `${c.dataset.label} ${p.x} 年期 ${p.code||''}：${p.y.toFixed(4)}%`; }}}},
@@ -908,7 +961,7 @@ function openRec3(el, days, ncol){
   const rows = days.flatMap(d=>recs(d).filter(r=>r.code===code));
   const det = document.createElement('tr');
   det.className = 'rec3';
-  det.innerHTML = `<td colspan="${ncol}"><div class="rec3box"><div class="rhead"><b>${esc(code)} ${esc(NAMES[code]||'')}</b>${subTag({sub:SUB.has(code), subUnknown:!SUB_CHECKED.has(code)})}${secTag(code)}<b style="margin-left:6px">成交明細</b><span class="note">${esc(rangeLabel())}｜有成交 ${new Set(rows.map(r=>r.d)).size} 天，合計面額 ${fY(sum(rows))} 億元｜再點一次該列即可收合</span></div><div class="tw scroll"></div></div></td>`;
+  det.innerHTML = `<td colspan="${ncol}"><div class="rec3box"><div class="rhead"><b>${esc(code)} ${esc(NAMES[code]||'')}</b>${subTag({sub:SUB.has(code), subUnknown:!SUB_CHECKED.has(code)})}${secTag(code)}${esgTag(code)}<b style="margin-left:6px">成交明細</b><span class="note">${esc(rangeLabel())}｜有成交 ${new Set(rows.map(r=>r.d)).size} 天，合計面額 ${fY(sum(rows))} 億元｜再點一次該列即可收合</span></div><div class="tw scroll"></div></div></td>`;
   tr.after(det);
   const mkTag = v => `<span class="tag mkt-${v}">${MKT[v]}</span>`;
   table(det.querySelector('.tw'), [{k:'d',t:'成交日期',l:1},{k:'mkt',t:'市場',l:1,f:mkTag},{k:'face',t:'成交面額(億)',f:fY},{k:'yAvg',t:'平均殖利率%',f:v=>fN(v)},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},{k:'rp',t:'利差(bp)',f:v=>fN(v,2)},{k:'count',t:'筆數',f:fI}], rows,
@@ -928,7 +981,7 @@ function renderT4(){
   const rows = days.flatMap(d=>recs(d).filter(r=>r.code===code));
   const t = typeOf(code);
   const subInfo = (t==='公司債'||t==='金融債') ? subTag({sub:SUB.has(code), subUnknown:!SUB_CHECKED.has(code)}) : '';
-  $('info4').innerHTML = `<b>${esc(code)} ${esc(NAMES[code])}</b>${subInfo}${secTag(code)}（${t}）｜區間內有成交 ${new Set(rows.map(r=>r.d)).size} 天，合計面額 ${fY(sum(rows))} 億元`;
+  $('info4').innerHTML = `<b>${esc(code)} ${esc(NAMES[code])}</b>${subInfo}${secTag(code)}${esgTag(code)}（${t}）｜區間內有成交 ${new Set(rows.map(r=>r.d)).size} 天，合計面額 ${fY(sum(rows))} 億元`;
   const labels = [...new Set(rows.map(r=>r.d))].sort();
   const yOf = (m,d) => { const r = rows.find(x=>x.d===d&&x.mkt===m); return r? r.yAvg : null; };
   const fOf = d => sum(rows.filter(r=>r.d===d))/YI;
@@ -957,14 +1010,100 @@ const T5COLS = [
 function renderT5(){
   const m = $('f5Mkt').value, t = $('f5Type').value, s = $('f5Sub').value, q = $('f5Q').value.trim().toUpperCase();
   T5ROWS = recs(curDay()).filter(r=>(!m||r.mkt===m)&&(!t||r.type===t)&&(!s||(s==='1'?r.sub:(r.type!=='公債'&&!r.sub)))&&(!q||r.code.includes(q)||r.name.toUpperCase().includes(q)));
-  table($('tb5'), T5COLS, T5ROWS, {sort:'face', rowClass:subRow});
+  table($('tb5'), T5COLS, T5ROWS, {sort:'face',
+    rowClass:r=>[subRow(r), r.code===SEL5 ? 'sel' : ''].filter(Boolean).join(' '),
+    onClick:r=>{ SEL5 = SEL5===r.code ? null : r.code; renderT5(); if(SEL5) $('card5info').scrollIntoView({behavior:'smooth', block:'nearest'}); }});
+  $('card5info').style.display = SEL5 ? '' : 'none';
+  $('info5').innerHTML = SEL5 ? bondInfoHtml(SEL5) : '';
 }
+let SEL5 = null;   // bond picked in the 成交明細 table (shows its basic data below)
+
+// ---------- bond basic data (成交明細 click + 債券查詢 tab) ----------
+// sources: issue.js (TPEx monthly issuance / outstanding reports: issuer, dates, coupon, amounts, redemption),
+//          data.js (MOPS full name, subordinated, guarantor, ratings; TPEx ESG list; trade records)
+function bondInfoHtml(code){
+  code = String(code||'').trim().toUpperCase();
+  const I = window.ISSUE_DATA || null;
+  const out = I ? (I.out||[]).find(o=>o[0]===code) : null;
+  const iss = !out && I ? (I.issued||[]).find(r=>r[0]===code) : null;
+  const fullName = (DATA.fullNames||{})[code] || '';
+  if(!out && !iss && !NAMES[code] && !fullName) return `<p class="note">找不到債券代號「${esc(code)}」的基本資料。</p>`;
+  // out: [code,type,name,issuerIdx,coupon,issueDate,term,issueAmt,outstanding,redemption,maturity]
+  // issued: [code,type,name,issuerIdx,coupon,issueDate,term,issueAmt,maturity]
+  const src = out || iss || [];
+  const name = src[2] || NAMES[code] || '';
+  const type = typeOf(code);
+  const issuer = I && src[3]!=null ? I.issuers[src[3]] : null;
+  const idate = src[5] || null, term = src[6]!=null ? src[6] : null;
+  const mat = out ? matOf(idate, term, out[10]) : iss ? matOf(idate, term, iss[8]) : null;
+  const perpetual = term!=null && term>=99;
+  const remain = mat && !perpetual ? (new Date(mat) - new Date()) / (365.25*864e5) : null;
+  const redRaw = out ? String(out[9]||'') : '';
+  const red = redRaw.replace(/\s*[（(][^（()）]*[A-Za-z][^（()）]*[)）]\s*/g,'').trim();
+  // latest trade (both markets) from the trade history
+  let last = null;
+  for(let i=DAYS.length-1; i>=0 && !last; i--){ const d = DAYS[i]; const hits = (d.e||[]).filter(r=>r[0]===code).map(r=>({m:'等殖',y:r[10],f:r[13]})).concat((d.o||[]).filter(r=>r[0]===code).map(r=>({m:'處所',y:r[10],f:r[13]}))); if(hits.length) last = {d:d.d, hits}; }
+  const r = {code, type, sub:SUB.has(code), subUnknown:!SUB_CHECKED.has(code)};
+  const br = bondRating(r), orr = otherRating(r);
+  const isCorp = type==='公司債' || type==='金融債';
+  const item = (k, v, wide) => `<div${wide?' class="wide"':''}><dt>${k}</dt><dd>${v==null||v==='' ? '<span class="dim">–</span>' : v}</dd></div>`;
+  const yrs = v => v==null ? null : (Math.round(v*100)/100).toLocaleString('zh-TW') + ' 年';
+  const tags = (isCorp ? subTag(r) : '') + secTag(code) + esgTag(code);
+  let h = `<div class="bhead"><b>${esc(code)} ${esc(name)}</b>${tags}<span class="note" style="margin-left:8px">${esc(type)}</span></div>`;
+  h += '<dl class="binfo">';
+  if(fullName) h += item('債券全名', esc(fullName), true);
+  h += item('發行人', issuer ? esc(issuer[0]) : (type==='公債' ? '中央政府' : null));
+  h += item('發行人統一編號', issuer && issuer[1] ? esc(issuer[1]) : null);
+  h += item('發行人股票代號', issuer && issuer[2] ? esc(issuer[2]) : null);
+  h += item('發行日', idate ? esc(idate) : null);
+  h += item('到期日', perpetual ? '無到期日（永續）' : (mat ? esc(mat) : null));
+  h += item('發行年期', perpetual ? '永續' : yrs(term));
+  h += item('剩餘年期', remain!=null ? (remain>0 ? yrs(remain) : '已到期') : null);
+  h += item('票面利率', src[4]!=null ? fN(src[4], 4).replace(/\.?0+$/,'') + '%' : null);
+  h += item('發行金額', src[7]!=null ? fM(src[7]) + ' 億元' : null);
+  h += item('流通在外餘額', out && out[8]!=null ? `${fM(out[8])} 億元<span class="dim" style="font-weight:400">（${esc(I.outMonth||'')} 月底）</span>` : null);
+  h += item('還本方式', red ? esc(red) : (out ? null : '<span class="dim" style="font-weight:400">查無（可能已到期下櫃，或為最近發行、尚未列入月報表）</span>'));
+  if(isCorp){
+    h += item('擔保', SECURED.has(code) ? esc(GUARS[code] ? '有擔保（' + GUARS[code] + '）' : '有擔保') : (r.subUnknown ? '未確認' : '無擔保'));
+    h += item('次順位', r.sub ? '是' : (r.subUnknown ? '未確認' : '否'));
+  }
+  h += item('ESG 類別', ESG[code] ? esc(ESG[code][0] + (ESG[code][1] ? '（' + ESG[code][1] + '）' : '')) : '非永續發展債券');
+  if(isCorp){
+    h += item('債券評等', br ? esc(br[0] + '（' + agShort(br[1]) + '）') : '--');
+    h += item(orr && orr[2].startsWith('保證人') ? '保證人評等' : '發行人評等', orr ? esc(orr[0] + '（' + agShort(orr[1]) + '）') : '--');
+  }
+  h += item('最近成交', last ? esc(last.d) + '　' + last.hits.map(x=>`${x.m} ${fN(x.y)}%`).join('、') : '近 5 年無成交紀錄', true);
+  h += '</dl>';
+  h += `<p class="note" style="margin-top:6px">資料來源：櫃買中心上櫃債券發行／流通在外餘額月報表、永續發展債券名單；債券全名、擔保、次順位與評等取自公開資訊觀測站。</p>`;
+  return h;
+}
+
+// ================= TAB 7 債券查詢 =================
+function renderT7(){
+  const q = $('q7').value.trim();
+  if(!q){ $('info7').innerHTML = '<p class="note">請輸入債券代號。</p>'; return; }
+  const I = window.ISSUE_DATA || {};
+  const U = q.toUpperCase();
+  const known = c => NAMES[c] || (I.out||[]).some(o=>o[0]===c) || (I.issued||[]).some(r=>r[0]===c);
+  let code = known(U) ? U : null;
+  if(!code){
+    // name search: outstanding bonds first (newest issue first), then bonds seen in trades
+    const outs = (I.out||[]).slice().sort((a,b)=>String(b[5]).localeCompare(String(a[5])));
+    const hit = outs.find(o=>o[2]===q) || outs.find(o=>String(o[2]).includes(q));
+    code = hit ? hit[0] : (Object.keys(NAMES).find(c=>NAMES[c]===q) || Object.keys(NAMES).find(c=>NAMES[c].includes(q)) || U);
+  }
+  $('info7').innerHTML = bondInfoHtml(code);
+}
+$('b7').onclick = renderT7;
+$('q7').addEventListener('keydown', e=>{ if(e.key==='Enter') renderT7(); });
+(function(){ const I = window.ISSUE_DATA || {}; const all = Object.assign({}, NAMES); (I.out||[]).forEach(o=>{ if(!all[o[0]]) all[o[0]] = o[2]; });
+  $('dl7').innerHTML = Object.keys(all).sort().map(c=>`<option value="${esc(c)}">${esc(all[c])}</option>`).join(''); })();
 ['f5Mkt','f5Type','f5Sub'].forEach(id=>$(id).onchange=renderT5);
 $('f5Q').oninput = renderT5;
 $('b5').onclick = async ()=>{
-  const head = ['日期','市場','種類','指標/非指標','對應年期','代號','名稱','次順位','擔保','存續期間','剩餘年限','最高殖利率','最低殖利率','平均殖利率','殖利率漲跌(bp)','平均百元價','利差(bp)','成交金額(元)','成交面額(元)','筆數'];
+  const head = ['日期','市場','種類','指標/非指標','對應年期','代號','名稱','次順位','擔保','ESG類別','存續期間','剩餘年限','最高殖利率','最低殖利率','平均殖利率','殖利率漲跌(bp)','平均百元價','利差(bp)','成交金額(元)','成交面額(元)','筆數'];
   const v = x => x==null ? '' : x;
-  const lines = [head.join(',')].concat(T5ROWS.map(r=>[r.d,MKT[r.mkt],r.type,r.type==='公債'?(r.hot?'指標券':'非指標券'):'',v(r.tenor),r.code,'"'+String(r.name).replace(/"/g,'""')+'"',subText(r),secText(r),v(r.dur),v(r.dy),v(r.yHigh),v(r.yLow),v(r.yAvg),v(toBp(r.yChg)),v(r.pAvg),v(r.rp),v(r.value),v(r.face),v(r.count)].join(',')));
+  const lines = [head.join(',')].concat(T5ROWS.map(r=>[r.d,MKT[r.mkt],r.type,r.type==='公債'?(r.hot?'指標券':'非指標券'):'',v(r.tenor),r.code,'"'+String(r.name).replace(/"/g,'""')+'"',subText(r),secText(r),esgText(r.code),v(r.dur),v(r.dy),v(r.yHigh),v(r.yLow),v(r.yAvg),v(toBp(r.yChg)),v(r.pAvg),v(r.rp),v(r.value),v(r.face),v(r.count)].join(',')));
   const text = '﻿'+lines.join('\r\n');
   const filename = `臺幣債券成交明細_${selDate.value}.csv`;
   // claude.ai link: same rule as 列印 / PDF — only viewers allowed to download get the file
@@ -1186,10 +1325,12 @@ function drawBank(){
 document.querySelectorAll('#t6 .seg').forEach(seg=>seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
   seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b)); SEG6[seg.dataset.for] = b.dataset.v; renderT6(); }));
 $('b6co').onclick = queryCompany;
+// quick buttons: query a common issuer by its tax ID in one click
+document.querySelectorAll('#q6quick button[data-tax]').forEach(b=>b.onclick=()=>{ $('q6co').value = b.dataset.tax; queryCompany(); });
 $('q6co').addEventListener('keydown', e=>{ if(e.key==='Enter') queryCompany(); });
 $('q6bank').onchange = drawBank;
 
-const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:renderT4, t5:renderT5, t6:renderT6};
+const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:renderT4, t5:renderT5, t6:renderT6, t7:renderT7};
 const WEEK = '日一二三四五六';
 function updateAsof(){
   const d = selDate.value, wd = WEEK[new Date(d+'T00:00:00').getDay()];
