@@ -382,20 +382,6 @@ body.pdf-mode .chartbox{height:280px}
   <!-- 4 個別債券 -->
   <section class="tab" id="t4">
     <div class="card">
-      <h2>債券成交查詢</h2>
-      <div class="row">
-        <input type="text" id="q4" list="dl4" placeholder="輸入代號或名稱，例如 A15109R 或 台電">
-        <datalist id="dl4"></datalist>
-        <button class="btn" id="b4">查詢</button>
-      </div>
-      <div id="info4" class="note"></div>
-      <div class="chartbox"><canvas id="c4"></canvas></div>
-    </div>
-    <div class="card">
-      <h2>歷史成交紀錄</h2>
-      <div class="tw scroll" id="tb4"></div>
-    </div>
-    <div class="card">
       <h2>發行公司成交查詢</h2>
       <p class="note">輸入發行公司名稱、統一編號或股票代號，顯示該公司所發行的所有債券在歷史區間內的成交資訊（依上方「歷史區間」）。</p>
       <div class="row">
@@ -419,6 +405,21 @@ body.pdf-mode .chartbox{height:280px}
       <h3 id="h4iR" style="display:none">所有成交紀錄</h3>
       <div class="tw scroll" id="tb4iR"></div>
     </div>
+    <div class="card">
+      <h2>債券成交查詢</h2>
+      <div class="row">
+        <input type="text" id="q4" list="dl4" placeholder="輸入代號或名稱，例如 A15109R 或 台電">
+        <datalist id="dl4"></datalist>
+        <button class="btn" id="b4">查詢</button>
+      </div>
+      <div id="info4" class="note"></div>
+      <div class="chartbox"><canvas id="c4"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>歷史成交紀錄</h2>
+      <div class="tw scroll" id="tb4"></div>
+    </div>
+
   </section>
 
   <!-- 8 買賣超統計：券商買賣斷排名（月） -->
