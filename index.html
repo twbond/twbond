@@ -266,7 +266,7 @@ body.pdf-mode .chartbox{height:280px}
     <button data-t="t6">發行/到期概況</button>
     <button data-t="t9">ESG</button>
     <button data-t="t4">債券成交查詢</button>
-    <button data-t="t8">成交統計</button>
+    <button data-t="t8">買賣超統計</button>
     <button data-t="t5">成交明細</button>
     <button data-t="t7">債券查詢</button>
   </nav>
@@ -393,9 +393,33 @@ body.pdf-mode .chartbox{height:280px}
       <h2>歷史成交紀錄</h2>
       <div class="tw scroll" id="tb4"></div>
     </div>
+    <div class="card">
+      <h2>發行公司成交查詢</h2>
+      <p class="note">輸入發行公司名稱、統一編號或股票代號，顯示該公司所發行的所有債券在歷史區間內的成交資訊（依上方「歷史區間」）。</p>
+      <div class="row">
+        <input type="text" id="q4i" list="dl4i" placeholder="例如 台積電、2330 或 統一編號" style="width:320px;max-width:100%">
+        <datalist id="dl4i"></datalist>
+        <button class="btn" id="b4i">查詢</button>
+      </div>
+      <div class="row" id="q4iFav" style="margin-top:6px">
+        <span class="note">常用公司：</span>
+        <div class="seg">
+          <button data-q="台灣中油股份有限公司">中油</button>
+          <button data-q="鴻海精密工業股份有限公司">鴻海</button>
+          <button data-q="台灣電力股份有限公司">台電</button>
+          <button data-q="台灣積體電路製造股份有限公司">台積電</button>
+        </div>
+      </div>
+      <div id="info4i" class="note"></div>
+      <div class="chartbox" id="cb4i" style="display:none"><canvas id="c4i"></canvas></div>
+      <h3 id="h4iB" style="display:none">各債券成交彙總</h3>
+      <div class="tw scroll" id="tb4iB"></div>
+      <h3 id="h4iR" style="display:none">所有成交紀錄</h3>
+      <div class="tw scroll" id="tb4iR"></div>
+    </div>
   </section>
 
-  <!-- 8 成交統計：券商買賣斷排名（月） -->
+  <!-- 8 買賣超統計：券商買賣斷排名（月） -->
   <section class="tab" id="t8">
     <div class="card">
       <h2>券商買賣斷月排名：前 10 大買超／賣超</h2>
@@ -426,7 +450,7 @@ body.pdf-mode .chartbox{height:280px}
   <section class="tab" id="t7">
     <div class="card">
       <h2>債券查詢</h2>
-      <p class="note">輸入債券代號（或名稱），顯示債券基本資料，包含發行人、發行／到期日、票面利率、發行金額、流通在外餘額、還本方式、擔保、次順位、ESG 類別與信用評等。</p>
+      <p class="note">輸入債券代號（或名稱），顯示債券基本資料，包含 ISIN、發行人、發行／到期日、票面利率、發行金額、流通在外餘額、還本方式、擔保、次順位、ESG 類別與信用評等。</p>
       <div class="row">
         <input type="text" id="q7" list="dl7" placeholder="輸入債券代號，例如 B903II 或 A15109R" style="width:340px;max-width:100%">
         <datalist id="dl7"></datalist>
@@ -601,6 +625,7 @@ const secTag = code => { const s = secLabel(code); return s ? `<span class="tag 
 const secText = r => (r.type==='公司債'||r.type==='金融債') ? (SECURED.has(r.code) ? secLabel(r.code) : r.subUnknown ? '未確認' : '否') : '';
 // ESG (sustainability) bonds: TPEx 永續發展債券 list — green / social / sustainability / sustainability-linked
 const ESG = DATA.esg || {};                  // code -> [category, standard]
+const ISIN = DATA.isin || {};                // code -> ISIN (TWSE ISIN code list)
 const ESG_SHORT = {'綠色債券':'綠色債券','社會責任債券':'社會責任債券','可持續發展債券':'可持續發展債券','可持續發展連結債券':'永續連結債券'};
 const esgLabel = code => { const e = ESG[code]; return e ? (ESG_SHORT[e[0]] || e[0] || 'ESG') : ''; };
 const esgTag = code => { const e = ESG[code]; return e ? `<span class="tag esg" title="${esc('櫃買中心永續發展債券：' + e[0] + (e[1] ? '（採用標準 ' + e[1] + '）' : ''))}">${esc(esgLabel(code))}</span>` : ''; };
@@ -1072,6 +1097,55 @@ function renderT4(){
 $('b4').onclick = renderT4;
 $('q4').addEventListener('keydown', e=>{ if(e.key==='Enter') renderT4(); });
 
+// ---------- 發行公司成交查詢 ----------
+// issuer of each bond: issue.js (monthly issuance / outstanding reports); bonds not in the reports (older issues)
+// fall back to the issuer of other bonds with the same 4-character code prefix when that prefix has a single issuer
+const ISSUER4 = (()=>{
+  const I = window.ISSUE_DATA, map = {};
+  if(!I || !I.issuers) return {map, list:[]};
+  (I.issued||[]).concat(I.out||[]).forEach(r=>{ if(r[3]!=null) map[r[0]] = r[3]; });
+  const pre = {};
+  Object.entries(map).forEach(([c,i])=>{ const p = c.slice(0,4); (pre[p] = pre[p] || new Set()).add(i); });
+  const guessed = new Set();
+  Object.keys(NAMES).forEach(c=>{ if(map[c]==null && !/^A/.test(c)){ const s = pre[c.slice(0,4)]; if(s && s.size===1){ map[c] = [...s][0]; guessed.add(c); } } });
+  const traded = new Set(Object.keys(NAMES).filter(c=>map[c]!=null).map(c=>map[c]));
+  return {map, guessed, list:[...traded].map(i=>({i, name:I.issuers[i][0], id:I.issuers[i][1]||'', stock:I.issuers[i][2]||''})).sort((a,b)=>a.name.localeCompare(b.name,'zh-TW'))};
+})();
+$('dl4i').innerHTML = ISSUER4.list.map(x=>`<option value="${esc(x.name)}">${esc([x.stock, x.id].filter(Boolean).join('　'))}</option>`).join('');
+function renderT4i(){
+  const q = $('q4i').value.trim();
+  const clear = msg => { $('info4i').textContent = msg; ['tb4iB','tb4iR'].forEach(id=>$(id).innerHTML=''); ['cb4i','h4iB','h4iR'].forEach(id=>$(id).style.display='none'); if(charts.c4i){ charts.c4i.destroy(); delete charts.c4i; } };
+  if(!q) return clear('請輸入發行公司名稱、統一編號或股票代號。');
+  const L = ISSUER4.list;
+  // short-name fallback (e.g. 台積電 -> bonds named 台積…): the issuer most of the matching bonds belong to
+  const byShort = () => { const k0 = q.replace(/電$|公司$/,''); const k = Object.keys(NAMES).some(c=>NAMES[c].includes(q)) || k0.length<2 ? q : k0; if(k.length<2) return null; const cnt = {}; Object.keys(NAMES).forEach(c=>{ const i = ISSUER4.map[c]; if(i!=null && NAMES[c].includes(k)) cnt[i] = (cnt[i]||0)+1; }); const best = Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]; return best==null ? null : L.find(x=>x.i===+best); };
+  const hit = L.find(x=>x.name===q) || L.find(x=>x.stock===q || x.id===q) || L.find(x=>x.name.includes(q)) || L.find(x=>x.name.replace(/股份有限公司|有限公司|公司/g,'').includes(q.replace(/股份有限公司|有限公司|公司/g,''))) || byShort();
+  $('q4iFav').querySelectorAll('button').forEach(b=>b.classList.toggle('on', !!hit && b.dataset.q===hit.name));
+  if(!hit) return clear('找不到符合的發行公司（僅限有成交紀錄的公司債／金融債發行人）。');
+  const codes = new Set(Object.keys(ISSUER4.map).filter(c=>ISSUER4.map[c]===hit.i));
+  const days = rangeDays();
+  const rows = days.flatMap(d=>recs(d).filter(r=>codes.has(r.code)));
+  const by = {};
+  rows.forEach(r=>{ const x = by[r.code] || (by[r.code] = {code:r.code, name:r.name, type:r.type, face:0, count:0, days:new Set(), ys:[], last:'', lastY:null, dy:null}); x.face += r.face||0; x.count += r.count||0; x.days.add(r.d); x.ys.push(r); x.name = r.name; if(r.d >= x.last){ x.last = r.d; x.lastY = r.yAvg; x.dy = r.dy; } });
+  const bonds = Object.values(by).map(x=>({code:x.code, name:x.name, type:x.type, n:x.days.size, face:x.face, count:x.count, y:wavg(x.ys,'yAvg'), last:x.last, lastY:x.lastY, dy:x.dy, sub:SUB.has(x.code), subUnknown:!SUB_CHECKED.has(x.code)}));
+  const nGuess = [...codes].filter(c=>ISSUER4.guessed.has(c) && by[c]).length;
+  $('info4i').innerHTML = `<b>${esc(hit.name)}</b>${hit.stock ? `（股票代號 ${esc(hit.stock)}）` : ''}｜${esc(rangeLabel())}｜共 ${codes.size} 檔債券，區間內有成交 ${bonds.length} 檔、${new Set(rows.map(r=>r.d)).size} 天、${rows.length} 筆紀錄，合計面額 ${fY(sum(rows))} 億元`
+    + (nGuess ? `<br><span class="dim">其中 ${nGuess} 檔未列在櫃買發行月報表，發行人依債券代號前 4 碼推定。</span>` : '');
+  if(!rows.length){ ['tb4iB','tb4iR'].forEach(id=>$(id).innerHTML=''); ['cb4i','h4iB','h4iR'].forEach(id=>$(id).style.display='none'); return; }
+  ['cb4i','h4iB','h4iR'].forEach(id=>$(id).style.display='');
+  const labels = [...new Set(rows.map(r=>r.d))].sort();
+  const fOf = (m,d) => sum(rows.filter(r=>r.d===d && r.mkt===m))/YI;
+  chart('c4i', {type:'bar', data:{labels, datasets:[
+    {label:'等殖 成交面額 億元', data:labels.map(d=>fOf('E',d)), backgroundColor:css('--accent'), stack:'f'},
+    {label:'處所 成交面額 億元', data:labels.map(d=>fOf('O',d)), backgroundColor:css('--corp'), stack:'f'}]},
+    options:{scales:{x:{stacked:true, ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:20}, grid:{display:false}}, y:{stacked:true, ticks:{color:css('--muted')}, grid:{color:css('--line')}}}}});
+  table($('tb4iB'), [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'last',t:'最近成交日',l:1},{k:'lastY',t:'成交殖利率%',f:v=>fN(v)},{k:'face',t:'成交面額(億)',f:fY},{k:'y',t:'加權殖利率%',f:v=>fN(v)},{k:'dy',t:'剩餘年期',f:v=>v==null?'–':fN(v,2)+' 年'},{k:'n',t:'成交天數',f:fI},{k:'count',t:'筆數',f:fI},...RATING_COLS,{k:'type',t:'種類',l:1}], bonds, {sort:'face', rowClass:subRow});
+  table($('tb4iR'), [{k:'d',t:'日期',l:1},{k:'mkt',t:'市場',l:1,f:mktName},{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1},{k:'dy',t:'剩餘年限',f:v=>fN(v,2)},{k:'yAvg',t:'平均殖利率%',f:v=>fN(v)},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},{k:'pAvg',t:'平均百元價',f:v=>fN(v)},{k:'rp',t:'利差(bp)',f:v=>fN(v,2)},{k:'face',t:'成交面額(億)',f:fY},{k:'count',t:'筆數',f:fI}], rows, {sort:'d'});
+}
+$('b4i').onclick = renderT4i;
+$('q4iFav').querySelectorAll('button').forEach(b=>b.onclick = ()=>{ $('q4i').value = b.dataset.q; renderT4i(); });
+$('q4i').addEventListener('keydown', e=>{ if(e.key==='Enter') renderT4i(); });
+
 // ================= TAB 5 =================
 let T5ROWS = [];
 const T5COLS = [
@@ -1124,6 +1198,7 @@ function bondInfoHtml(code){
   let h = `<div class="bhead"><b>${esc(code)} ${esc(name)}</b>${tags}<span class="note" style="margin-left:8px">${esc(type)}</span></div>`;
   h += '<dl class="binfo">';
   if(fullName) h += item('債券全名', esc(fullName), true);
+  h += item('ISIN', ISIN[code] ? esc(ISIN[code]) : '<span class="dim" style="font-weight:400">查無（臺灣證券交易所國際證券辨識號碼一覽表未列）</span>');
   h += item('發行人', issuer ? esc(issuer[0]) : (type==='公債' ? '中央政府' : null));
   h += item('發行人統一編號', issuer && issuer[1] ? esc(issuer[1]) : null);
   h += item('發行人股票代號', issuer && issuer[2] ? esc(issuer[2]) : null);
@@ -1146,11 +1221,11 @@ function bondInfoHtml(code){
   }
   h += item('最近成交', last ? esc(last.d) + '　' + last.hits.map(x=>`${x.m} ${fN(x.y)}%`).join('、') : `資料期間（${DAYS[0].d} 起）內無成交紀錄`, true);
   h += '</dl>';
-  h += `<p class="note" style="margin-top:6px">資料來源：櫃買中心上櫃債券發行／流通在外餘額月報表、永續發展債券名單；債券全名、擔保、次順位與評等取自公開資訊觀測站。</p>`;
+  h += `<p class="note" style="margin-top:6px">資料來源：櫃買中心上櫃債券發行／流通在外餘額月報表、永續發展債券名單；ISIN 取自臺灣證券交易所國際證券辨識號碼一覽表；債券全名、擔保、次順位與評等取自公開資訊觀測站。</p>`;
   return h;
 }
 
-// ================= TAB 8 成交統計（券商買賣斷月排名）=================
+// ================= TAB 8 買賣超統計（券商買賣斷月排名）=================
 // broker.js: months = [{m:'YYYY-MM', r:[[code,name,ebtsBuy,ebtsSell,otcBuy,otcSell,fwdBuy,fwdSell],...]}], amounts in million TWD
 const BRK = (window.BROKER_DATA && window.BROKER_DATA.months) || [];
 const fBk = v => v==null||isNaN(v) ? '–' : (v/100).toLocaleString('zh-TW',{minimumFractionDigits:2,maximumFractionDigits:2});   // million -> 億
@@ -1600,7 +1675,7 @@ document.querySelectorAll('#t9 .seg9').forEach(seg=>seg.querySelectorAll('button
   seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', SEG9[k]==='all' ? x.dataset.v==='all' : SEG9[k].includes(x.dataset.v)));
   renderT9(); }));
 
-const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:renderT4, t5:renderT5, t6:renderT6, t7:renderT7, t8:renderT8, t9:renderT9};
+const RENDER = {t1:renderT1, t2:renderT2, t3:renderT3, t4:()=>{ renderT4(); if($('q4i').value.trim()) renderT4i(); }, t5:renderT5, t6:renderT6, t7:renderT7, t8:renderT8, t9:renderT9};
 const WEEK = '日一二三四五六';
 function updateAsof(){
   const d = selDate.value, wd = WEEK[new Date(d+'T00:00:00').getDay()];
