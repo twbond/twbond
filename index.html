@@ -318,7 +318,9 @@ body.pdf-mode .chartbox{height:280px}
     </div>
     <div class="card">
       <h2>當日公債成交明細</h2>
-      <p class="note">等殖與處所分開列示，依年期由短到長排列；同一年期內指標券在前，再依成交面額由大到小。點欄位名稱可改變排序。</p>
+      <p class="note">先列等殖＋處所合計（同一檔債券合併為一列，殖利率與百元價依成交面額加權平均），再分別列出等殖與處所；依年期由短到長排列，同一年期內指標券在前，再依成交面額由大到小。點欄位名稱可改變排序。</p>
+      <h3 class="sub-h" id="govListA">等殖＋處所</h3>
+      <div class="tw scroll" id="tbGovListA"></div>
       <h3 class="sub-h" id="govListE">等殖</h3>
       <div class="tw scroll" id="tbGovListE"></div>
       <h3 class="sub-h" id="govListO">處所</h3>
@@ -895,6 +897,14 @@ function renderT2(){
     {k:'yAvg',t:'平均殖利率%',f:v=>fN(v)},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},{k:'pAvg',t:'平均百元價',f:v=>fN(v)},
     {k:'face',t:'成交面額(億)',f:fY}];
   const RE = R.filter(r=>r.mkt==='E'), RO = R.filter(r=>r.mkt==='O');
+  // 等殖＋處所: one row per bond; yield and price are face-weighted across both markets
+  const byA = {};
+  R.forEach(r=>{ const x = byA[r.code] || (byA[r.code] = {code:r.code, name:r.name, tenor:r.tenor, hot:r.hot, dy:r.dy, rows:[], fE:0, fO:0, count:null}); x.rows.push(r); if(r.mkt==='E') x.fE += r.face||0; else { x.fO += r.face||0; if(r.count!=null) x.count = (x.count||0) + r.count; } });
+  const RA = Object.values(byA).map(x=>({...x, face:x.fE+x.fO, yAvg:wavg(x.rows,'yAvg'), pAvg:wavg(x.rows,'pAvg')}));
+  $('govListA').textContent = `等殖＋處所（${RA.length} 檔，${fY(sum(RA))} 億元）`;
+  table($('tbGovListA'), [govCols[0], govCols[1], govCols[2], govCols[3], govCols[4],
+    {k:'yAvg',t:'加權平均殖利率%',f:v=>fN(v)},{k:'pAvg',t:'加權平均百元價',f:v=>fN(v)},
+    {k:'fE',t:'等殖面額(億)',f:v=>v?fY(v):'–'},{k:'fO',t:'處所面額(億)',f:v=>v?fY(v):'–'},{k:'face',t:'合計面額(億)',f:fY},{k:'count',t:'處所筆數',f:fI}], RA, {sort:'tenor', sortDir:1});
   $('govListE').textContent = `等殖（${RE.length} 筆，${fY(sum(RE))} 億元）`;
   $('govListO').textContent = `處所（${RO.length} 筆，${fY(sum(RO))} 億元）`;
   table($('tbGovListE'), govCols, RE, {sort:'tenor', sortDir:1});
@@ -1207,7 +1217,10 @@ function bondInfoHtml(code){
   h += item('發行年期', perpetual ? '永續' : yrs(term));
   h += item('剩餘年期', remain!=null ? (remain>0 ? yrs(remain) : '已到期') : null);
   h += item('票面利率', src[4]!=null ? fN(src[4], 4).replace(/\.?0+$/,'') + '%' : null);
-  h += item('發行金額', src[7]!=null ? fM(src[7]) + ' 億元' : null);
+  // matured bonds (no outstanding row): add up every tranche (first issue + reopenings)
+  const tr = iss ? (I.issued||[]).filter(r=>r[0]===code) : [];
+  const issAmt = tr.length > 1 ? tr.reduce((s,r)=>s+(r[7]||0),0) : src[7];
+  h += item('發行金額', issAmt!=null ? fM(issAmt) + ' 億元' + (tr.length > 1 ? `<span class="dim" style="font-weight:400">（含增額發行，共 ${tr.length} 次）</span>` : '') : null);
   h += item('流通在外餘額', out && out[8]!=null ? `${fM(out[8])} 億元<span class="dim" style="font-weight:400">（${esc(I.outMonth||'')} 月底）</span>` : null);
   h += item('還本方式', red ? esc(red) : (out ? null : '<span class="dim" style="font-weight:400">查無（可能已到期下櫃，或為最近發行、尚未列入月報表）</span>'));
   if(isCorp){
@@ -1495,6 +1508,8 @@ function queryCompany(){
   }
   SEL6.issuer = hits[0].i; drawCompany();
 }
+// number of distinct bonds (issued has one row per tranche; a reopened bond keeps its code)
+const nBonds = rows => new Set(rows.map(r=>Array.isArray(r) ? r[0] : r.code)).size;
 function companyData(ids){
   const set = new Set([].concat(ids));
   const iss = {}, mat = {}; ISS_YEARS.forEach(y=>iss[y]=[]); MAT_YEARS.forEach(y=>mat[y]=[]);
@@ -1537,7 +1552,7 @@ function drawCompanyTable(cd){
   const tail = [guarCol, subCol, ...RATING_COLS];
   if(SEL6.kind==='iss'){
     const rows = cd.iss[SEL6.year].map(r=>bondObj(r[0], {name:r[2], idate:r[5], term:r[6], cpn:r[4], amt:r[7], mat:matOf(r[5], r[6], r[8])}));
-    $('q6coSelTitle').textContent = `${issYearLabel(SEL6.year)} 發行的債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
+    $('q6coSelTitle').textContent = `${issYearLabel(SEL6.year)} 發行的債券（${nBonds(rows)} 檔${rows.length > nBonds(rows) ? `、${rows.length} 筆（含增額發行）` : ''}，合計 ${fM(sum(rows,'amt'))} 億元）`;
     table(el, base.concat([{k:'amt',t:'發行金額(億)',f:fM}], tail), rows, {sort:'idate', sortDir:1, rowClass:subRow});
   } else {
     const rows = cd.mat[SEL6.year].map(p=>{ const o = p.o; return bondObj(o[0], {name:o[2], idate:o[5], term:o[6], cpn:o[4], amt:o[7], bal:o[8], due:p.amt, ddate:p.date, mat:matOf(o[5], o[6], o[10])}); });
@@ -1628,7 +1643,7 @@ function drawT9Sel(d){
   if(SEL9.iss==null){ $('q9selIss').textContent = '點選上方圖表的年度，查看該年度發行的 ESG 債券'; ei.innerHTML = ''; }
   else {
     const rows = issRows9(d.iss[SEL9.iss]);
-    $('q9selIss').textContent = `${esgYearLabel(SEL9.iss)} 發行的 ESG 債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
+    $('q9selIss').textContent = `${esgYearLabel(SEL9.iss)} 發行的 ESG 債券（${nBonds(rows)} 檔${rows.length > nBonds(rows) ? `、${rows.length} 筆（含增額發行）` : ''}，合計 ${fM(sum(rows,'amt'))} 億元）`;
     table(ei, [c0, c1, c2, {k:'amt',t:'發行金額(億)',f:fM}, ...rest, esgStdCol, guarCol, ...RATING_COLS], rows, {sort:'idate', sortDir:1});
   }
   if(SEL9.mat==null){ $('q9selMat').textContent = '點選上方圖表的年度，查看該年度到期的 ESG 債券'; em.innerHTML = ''; }
@@ -1647,11 +1662,11 @@ function drawT9Top(d){
   yb.innerHTML = ISS_YEARS.slice().reverse().map(y=>`<button data-y="${y}" class="${y===Y?'on':''}">${esc(esgYearLabel(y))}</button>`).join('');
   yb.querySelectorAll('button').forEach(b=>b.onclick=()=>{ TOP9Y = +b.dataset.y; SEL9TOP = {year:null, issuer:null}; drawT9Top(d); });
   // 當年度前 5 大發行人
-  const g = {}; L.forEach(r=>{ const k = issuerKey9(r), c = esgCat(r[0]); (g[k] = g[k] || {k, name:issuerName9(r), amt:0, n:0}); g[k].amt += r[7]||0; g[k].n++; g[k][c] = (g[k][c]||0) + (r[7]||0); });
+  const g = {}; L.forEach(r=>{ const k = issuerKey9(r), c = esgCat(r[0]); (g[k] = g[k] || {k, name:issuerName9(r), amt:0, codes:new Set()}); g[k].amt += r[7]||0; g[k].codes.add(r[0]); g[k].n = g[k].codes.size; g[k][c] = (g[k][c]||0) + (r[7]||0); });
   const tot = L.reduce((s,r)=>s+(r[7]||0),0), all = Object.values(g).sort((a,b)=>b.amt-a.amt), top = all.slice(0,5);
   top.forEach((x,i)=>{ x.rank = i+1; x.pct = tot ? x.amt/tot*100 : null; });
   const top5 = sum(top,'amt');
-  $('q9topInfo').textContent = tot ? `${esgYearLabel(Y)} ESG 債券發行合計${EXCL9M ? '（不含地方政府債）' : ''} ${fM(tot)} 億元（${L.length} 檔，${all.length} 家發行人）；前 5 大合計 ${fM(top5)} 億元，占 ${fN(top5/tot*100,1)}%。` : `${esgYearLabel(Y)} 沒有符合所選類別的 ESG 債券發行。`;
+  $('q9topInfo').textContent = tot ? `${esgYearLabel(Y)} ESG 債券發行合計${EXCL9M ? '（不含地方政府債）' : ''} ${fM(tot)} 億元（${nBonds(L)} 檔，${all.length} 家發行人）；前 5 大合計 ${fM(top5)} 億元，占 ${fN(top5/tot*100,1)}%。` : `${esgYearLabel(Y)} 沒有符合所選類別的 ESG 債券發行。`;
   const cats = d.catsIss;   // 選取的類別一律列出（該年沒有的顯示 –）
   table($('q9top'), [{k:'rank',t:'名次',c:1},{k:'name',t:'發行人',l:1},{k:'n',t:'檔數'},{k:'amt',t:'發行金額(億)',f:fM},{k:'pct',t:'占當年比重%',f:v=>fN(v,1)},
     ...(cats.length > 1 ? cats.map(c=>({k:c,t:`<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${ESG_COLOR[c]};margin-right:4px"></span>${esc(ESG_SHORT[c]||c)}(億)`,f:v=>v?fM(v):'–'})) : [])],
@@ -1662,7 +1677,7 @@ function drawT9Top(d){
   if(!SEL9TOP.issuer){ $('q9topTitle').textContent = '點選上方的發行人，查看該年度發行的 ESG 債券'; el.innerHTML = ''; return; }
   const rows = issRows9(d.iss[SEL9TOP.year].filter(r=>issuerKey9(r)===SEL9TOP.issuer));
   if(!rows.length){ SEL9TOP = {year:null, issuer:null}; drawT9Top(d); return; }
-  $('q9topTitle').textContent = `${rows[0].issuer}　${esgYearLabel(SEL9TOP.year)} 發行的 ESG 債券（${rows.length} 檔，合計 ${fM(sum(rows,'amt'))} 億元）`;
+  $('q9topTitle').textContent = `${rows[0].issuer}　${esgYearLabel(SEL9TOP.year)} 發行的 ESG 債券（${nBonds(rows)} 檔${rows.length > nBonds(rows) ? `、${rows.length} 筆（含增額發行）` : ''}，合計 ${fM(sum(rows,'amt'))} 億元）`;
   table(el, base9.concat([{k:'amt',t:'發行金額(億)',f:fM}, esgStdCol, guarCol, ...RATING_COLS]), rows, {sort:'idate', sortDir:1});
 }
 // 可複選：點類別切換選取；「全部」或四類全選、全部取消時回到全部
