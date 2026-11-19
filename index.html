@@ -1640,7 +1640,9 @@ function renderT9(){
   const sumTab = (el, years, labelOf, f, head, cats) => {
     const rows = years.map(y=>{ const o = {y:labelOf(y), all:0}; cats.forEach(c=>{ o[c] = f(y,c); o.all += o[c]; }); return o; });
     const tot = {_sum:true, y:'合計', all:sum(rows,'all')}; cats.forEach(c=>tot[c] = sum(rows,c)); rows.push(tot);
-    const cols = [{k:'y',t:head,l:1}, ...cats.map(c=>({k:c,t:ESG_SHORT[c]||c,f:fM}))]; if(cats.length > 1) cols.push({k:'all',t:'合計',f:fM});
+    // header names shortened (社會責任債 / 可持續發展債 / 永續連結債); 綠色債券 stays as is
+    const HEAD9 = {'社會責任債券':'社會責任債','可持續發展債券':'可持續發展債','可持續發展連結債券':'永續連結債'};
+    const cols = [{k:'y',t:head,l:1}, ...cats.map(c=>({k:c,t:HEAD9[c]||ESG_SHORT[c]||c,f:fM}))]; if(cats.length > 1) cols.push({k:'all',t:'合計',f:fM});
     table(el, cols, rows, {noSort:true});
     // 發行、到期兩張表同格式：固定欄寬（年度欄 26%，其餘欄平分），並排時數字欄上下對齊
     const t = el.querySelector('table'); if(!t) return;
