@@ -1583,8 +1583,11 @@ const ESG_CATS = ['綠色債券','社會責任債券','可持續發展債券','�
 const ESG_COLOR = {'綠色債券':'#59a14f','社會責任債券':'#4e79a7','可持續發展債券':'#f28e2b','可持續發展連結債券':'#b07aa1'};
 const esgCat = code => ESG[code] ? ESG[code][0] : null;
 let SEG9 = {iss:'all', mat:'all'}, SEL9 = {iss:null, mat:null}, SEL9TOP = {year:null, issuer:null}, TOP9Y = Y0, EXCL9M = false;
-const issuerName9 = r => { if(r[9]) return r[9]; const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? x[0] : (r[1]==='G' ? '中央政府' : r[2]); };
-const issuerKey9 = r => { if(r[9]) return r[9]; const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? (x[1] || x[0]) : issuerName9(r); };
+// issuer of an ESG row: issue.js issuer index first; r[9] is the issuer only on ESG_EXTRA rows (10 items) —
+// on outstanding rows (11 items) r[9] is the redemption note, so it must not be used there
+const extraIssuer9 = r => r.length===10 && r[3]==null && r[9] ? r[9] : null;
+const issuerName9 = r => { const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? x[0] : (extraIssuer9(r) || (r[1]==='G' ? '中央政府' : r[2])); };
+const issuerKey9 = r => { const x = r[3]!=null ? ISS.issuers[r[3]] : null; return x ? (x[1] || x[0]) : (extraIssuer9(r) || issuerName9(r)); };
 // 發行月報表沒有的 ESG 債券（地方政府債、最近一期月報之後發行的債券），改用櫃買中心 ESG 名單的發行人、發行日與發行金額補入；
 // 名單中代號全為數字者是轉換公司債，不納入（data.js 只替新台幣、非轉換公司債的 ESG 債券帶發行資料）
 // 補入列：[code, type, name, null, null, issueDate, null, amt(million), null, issuerName]
