@@ -777,6 +777,9 @@ function chart(id, cfg){
   });
   cfg.options.plugins.legend = Object.assign({position:'top', align:'end'}, cfg.options.plugins.legend||{});
   cfg.options.plugins.legend.labels = Object.assign({usePointStyle:true, pointStyle:'rectRounded', boxWidth:10, boxHeight:10}, cfg.options.plugins.legend.labels||{});
+  // only one to three dates (e.g. a single-day range): keep bars slim instead of filling the whole chart width
+  const nLab = (cfg.data.labels || []).length;
+  if(nLab && nLab <= 3) (cfg.data.datasets||[]).forEach(d=>{ if((d.type || cfg.type)==='bar' && d.maxBarThickness==null) d.maxBarThickness = 48; });
   charts[id] = new Chart($(id), cfg);
 }
 
