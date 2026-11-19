@@ -1126,7 +1126,7 @@ function renderT4i(){
   const days = rangeDays();
   const rows = days.flatMap(d=>recs(d).filter(r=>codes.has(r.code)));
   const by = {};
-  rows.forEach(r=>{ const x = by[r.code] || (by[r.code] = {code:r.code, name:r.name, type:r.type, face:0, count:0, days:new Set(), ys:[], last:'', lastY:null, dy:null}); x.face += r.face||0; x.count += r.count||0; x.days.add(r.d); x.ys.push(r); x.name = r.name; if(r.d >= x.last){ x.last = r.d; x.lastY = r.yAvg; x.dy = r.dy; } });
+  rows.forEach(r=>{ const x = by[r.code] || (by[r.code] = {code:r.code, name:r.name, type:r.type, face:0, count:null, days:new Set(), ys:[], last:'', lastY:null, dy:null}); x.face += r.face||0; if(r.mkt==='O' && r.count!=null){ x.count = (x.count||0) + r.count; } x.days.add(r.d); x.ys.push(r); x.name = r.name; if(r.d >= x.last){ x.last = r.d; x.lastY = r.yAvg; x.dy = r.dy; } });
   const bonds = Object.values(by).map(x=>({code:x.code, name:x.name, type:x.type, n:x.days.size, face:x.face, count:x.count, y:wavg(x.ys,'yAvg'), last:x.last, lastY:x.lastY, dy:x.dy, sub:SUB.has(x.code), subUnknown:!SUB_CHECKED.has(x.code)}));
   const nGuess = [...codes].filter(c=>ISSUER4.guessed.has(c) && by[c]).length;
   $('info4i').innerHTML = `<b>${esc(hit.name)}</b>${hit.stock ? `（股票代號 ${esc(hit.stock)}）` : ''}｜${esc(rangeLabel())}｜共 ${codes.size} 檔債券，區間內有成交 ${bonds.length} 檔、${new Set(rows.map(r=>r.d)).size} 天、${rows.length} 筆紀錄，合計面額 ${fY(sum(rows))} 億元`
@@ -1139,7 +1139,7 @@ function renderT4i(){
     {label:'等殖 成交面額 億元', data:labels.map(d=>fOf('E',d)), backgroundColor:css('--accent'), stack:'f'},
     {label:'處所 成交面額 億元', data:labels.map(d=>fOf('O',d)), backgroundColor:css('--corp'), stack:'f'}]},
     options:{scales:{x:{stacked:true, ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:20}, grid:{display:false}}, y:{stacked:true, ticks:{color:css('--muted')}, grid:{color:css('--line')}}}}});
-  table($('tb4iB'), [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'last',t:'最近成交日',l:1},{k:'lastY',t:'成交殖利率%',f:v=>fN(v)},{k:'face',t:'成交面額(億)',f:fY},{k:'y',t:'加權殖利率%',f:v=>fN(v)},{k:'dy',t:'剩餘年期',f:v=>v==null?'–':fN(v,2)+' 年'},{k:'n',t:'成交天數',f:fI},{k:'count',t:'筆數',f:fI},...RATING_COLS,{k:'type',t:'種類',l:1}], bonds, {sort:'face', rowClass:subRow});
+  table($('tb4iB'), [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'last',t:'最近成交日',l:1},{k:'lastY',t:'成交殖利率%',f:v=>fN(v)},{k:'face',t:'成交面額(億)',f:fY},{k:'y',t:'區間面額加權殖利率%',f:v=>fN(v)},{k:'dy',t:'剩餘年期',f:v=>v==null?'–':fN(v,2)+' 年'},{k:'n',t:'成交天數',f:fI},{k:'count',t:'處所筆數',f:fI},...RATING_COLS,{k:'type',t:'種類',l:1}], bonds, {sort:'face', rowClass:subRow});
   table($('tb4iR'), [{k:'d',t:'日期',l:1},{k:'mkt',t:'市場',l:1,f:mktName},{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1},{k:'dy',t:'剩餘年限',f:v=>fN(v,2)},{k:'yAvg',t:'平均殖利率%',f:v=>fN(v)},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},{k:'pAvg',t:'平均百元價',f:v=>fN(v)},{k:'rp',t:'利差(bp)',f:v=>fN(v,2)},{k:'face',t:'成交面額(億)',f:fY},{k:'count',t:'筆數',f:fI}], rows, {sort:'d'});
 }
 $('b4i').onclick = renderT4i;
