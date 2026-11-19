@@ -544,7 +544,8 @@ body.pdf-mode .chartbox{height:280px}
 
   <section class="tab" id="t5">
     <div class="card long">
-      <h2>當日完整成交明細</h2>
+      <h2>當日／區間成交明細</h2>
+      <p class="note" id="t5range">依上方「資料日期」與「歷史區間」顯示成交明細。</p>
       <div class="row">
         <label class="c">市場 <select id="f5Mkt"><option value="">全部</option><option value="E">等殖</option><option value="O">處所</option></select></label>
         <label class="c">種類 <select id="f5Type"><option value="">全部</option><option>公債</option><option>公司債</option><option>金融債</option></select></label>
@@ -1165,10 +1166,17 @@ const T5COLS = [
   {k:'tenor',t:'對應年期',f:v=>v?v+'年':''},{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'dur',t:'存續期間',f:v=>fN(v,2)},{k:'dy',t:'剩餘年限',f:v=>fN(v,2)},
   {k:'yHigh',t:'最高殖利率',f:v=>fN(v)},{k:'yLow',t:'最低殖利率',f:v=>fN(v)},{k:'yAvg',t:'平均殖利率',f:v=>fN(v)},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},
   {k:'pAvg',t:'平均百元價',f:v=>fN(v)},{k:'rp',t:'利差(bp)',f:v=>fN(v,2)},{k:'value',t:'成交金額(億)',f:fY},{k:'face',t:'成交面額(億)',f:fY},{k:'count',t:'筆數',f:fI}];
+// follows the top 資料日期 + 歷史區間 (當天 = one day; other ranges = every trade record in the range, newest first)
+const T5_MAX = 1000;   // rows drawn on screen for long ranges (the CSV export always has every row)
 function renderT5(){
   const m = $('f5Mkt').value, t = $('f5Type').value, s = $('f5Sub').value, q = $('f5Q').value.trim().toUpperCase();
-  T5ROWS = recs(curDay()).filter(r=>(!m||r.mkt===m)&&(!t||r.type===t)&&(!s||(s==='1'?r.sub:(r.type!=='公債'&&!r.sub)))&&(!q||r.code.includes(q)||r.name.toUpperCase().includes(q)));
-  table($('tb5'), T5COLS, T5ROWS, {sort:'face',
+  const days = rangeDays(), multi = days.length > 1;
+  T5ROWS = days.flatMap(d=>recs(d)).filter(r=>(!m||r.mkt===m)&&(!t||r.type===t)&&(!s||(s==='1'?r.sub:(r.type!=='公債'&&!r.sub)))&&(!q||r.code.includes(q)||r.name.toUpperCase().includes(q)));
+  $('t5range').textContent = `${rangeLabel()}｜${T5ROWS.length.toLocaleString('zh-TW')} 筆，合計成交面額 ${fY(sum(T5ROWS))} 億元`
+    + (multi && T5ROWS.length > T5_MAX ? `｜畫面只列出依目前排序的前 ${T5_MAX.toLocaleString('zh-TW')} 筆，可用上方篩選縮小範圍，或匯出 CSV 取得全部資料` : '');
+  const cols = multi ? [{k:'d',t:'成交日期',l:1}].concat(T5COLS) : T5COLS;
+  if(!multi && $('tb5')._sort && $('tb5')._sort.k==='d') $('tb5')._sort = null;
+  table($('tb5'), cols, T5ROWS, {sort: multi ? 'd' : 'face', limit: multi ? T5_MAX : 0,
     rowClass:r=>[subRow(r), r.code===SEL5 ? 'sel' : ''].filter(Boolean).join(' '),
     onClick:r=>{ SEL5 = SEL5===r.code ? null : r.code; renderT5(); if(SEL5) $('card5info').scrollIntoView({behavior:'smooth', block:'nearest'}); }});
   $('card5info').style.display = SEL5 ? '' : 'none';
@@ -1340,7 +1348,8 @@ $('b5').onclick = async ()=>{
   const v = x => x==null ? '' : x;
   const lines = [head.join(',')].concat(T5ROWS.map(r=>[r.d,MKT[r.mkt],r.type,r.type==='公債'?(r.hot?'指標券':'非指標券'):'',v(r.tenor),r.code,'"'+String(r.name).replace(/"/g,'""')+'"',subText(r),secText(r),esgText(r.code),v(r.dur),v(r.dy),v(r.yHigh),v(r.yLow),v(r.yAvg),v(toBp(r.yChg)),v(r.pAvg),v(r.rp),v(r.value),v(r.face),v(r.count)].join(',')));
   const text = '﻿'+lines.join('\r\n');
-  const filename = `臺幣債券成交明細_${selDate.value}.csv`;
+  const rd = rangeDays();
+  const filename = rd.length > 1 ? `臺幣債券成交明細_${rd[0].d}_${rd[rd.length-1].d}.csv` : `臺幣債券成交明細_${selDate.value}.csv`;
   // claude.ai link: same rule as 列印 / PDF — only viewers allowed to download get the file
   if(IN_CLAUDE){
     notify('檢查下載權限中…');
