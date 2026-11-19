@@ -1623,6 +1623,12 @@ function renderT9(){
     const tot = {_sum:true, y:'合計', all:sum(rows,'all')}; cats.forEach(c=>tot[c] = sum(rows,c)); rows.push(tot);
     const cols = [{k:'y',t:head,l:1}, ...cats.map(c=>({k:c,t:ESG_SHORT[c]||c,f:fM}))]; if(cats.length > 1) cols.push({k:'all',t:'合計',f:fM});
     table(el, cols, rows, {noSort:true});
+    // 發行、到期兩張表同格式：固定欄寬（年度欄 26%，其餘欄平分），並排時數字欄上下對齊
+    const t = el.querySelector('table'); if(!t) return;
+    t.style.tableLayout = 'fixed'; t.style.width = '100%';
+    const ths = t.querySelectorAll('thead th'), rest = (74 / Math.max(1, ths.length - 1)).toFixed(2) + '%';
+    ths.forEach((th,i)=>{ th.style.width = i===0 ? '26%' : rest; th.style.whiteSpace = 'normal'; });
+    t.querySelectorAll('tbody td:first-child').forEach(td=>{ td.style.whiteSpace = 'nowrap'; });
   };
   sumTab($('tb9iss'), ISS_YEARS, esgYearLabel, issSum, '發行年度', d.catsIss);
   sumTab($('tb9mat'), MAT_YEARS, matYearLabel, matSum, '到期年度', d.catsMat);
