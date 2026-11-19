@@ -1423,6 +1423,8 @@ const ISS_OUT_END = ISS && ISS.outMonth ? addMonthsIso(ISS.outMonth + '-01', 1) 
 const Y0 = new Date().getFullYear();
 const ISS_YEARS = [Y0-4, Y0-3, Y0-2, Y0-1, Y0];
 const MAT_YEARS = [Y0, Y0+1, Y0+2, Y0+3, Y0+4, Y0+5];
+// ESG tab: same number of rows as the issuance side (past 5 years) -> this year's remaining months + next 4 years
+const MAT9_YEARS = MAT_YEARS.slice(0, 5);
 const lastIssueMonth = () => { let mx = ''; (ISS.issued||[]).forEach(r=>{ if(r[5] > mx) mx = r[5]; }); return mx; };
 const issYearLabel = y => { if(y!==Y0) return String(y); const lm = lastIssueMonth(); return lm && +lm.slice(0,4)===Y0 ? `${y}（1–${+lm.slice(5,7)}月）` : String(y); };
 const matYearLabel = y => y===Y0 && ISS.outMonth && +ISS.outMonth.slice(0,4)===Y0 ? `${y}（${+ISS.outMonth.slice(5,7)+1}–12月）` : String(y);
@@ -1600,7 +1602,7 @@ const esgYearLabel = y => { if(y!==Y0) return String(y); let lm = lastIssueMonth
 function esgData(){
   const catsOf = v => v==='all' ? ESG_CATS : ESG_CATS.filter(c=>v.includes(c));
   const catsIss = catsOf(SEG9.iss), catsMat = catsOf(SEG9.mat);
-  const iss = {}, mat = {}; ISS_YEARS.forEach(y=>iss[y]=[]); MAT_YEARS.forEach(y=>mat[y]=[]);
+  const iss = {}, mat = {}; ISS_YEARS.forEach(y=>iss[y]=[]); MAT9_YEARS.forEach(y=>mat[y]=[]);
   ISS.issued.concat(ESG_EXTRA).forEach(r=>{ const c = esgCat(r[0]); if(!c || !catsIss.includes(c) || !r[7]) return; const y = +String(r[5]).slice(0,4); if(iss[y]) iss[y].push(r); });
   ISS.out.forEach(o=>{ const c = esgCat(o[0]); if(!c || !catsMat.includes(c)) return; payments(o).forEach(p=>{ const y = +p.date.slice(0,4); if(mat[y]) mat[y].push({o, amt:p.amt, date:p.date}); }); });
   return {catsIss, catsMat, iss, mat};
@@ -1613,14 +1615,14 @@ function renderT9(){
   const matSum = (y,c) => d.mat[y].filter(p=>esgCat(p.o[0])===c).reduce((s,p)=>s+p.amt,0);
   const sets = (years, f, cats) => cats.map(c=>({label:ESG_SHORT[c]||c, data:years.map(y=>f(y,c)/100), backgroundColor:ESG_COLOR[c], stack:'s'}));
   // 兩張圖同尺寸：共用 Y 軸上限、固定 Y 軸寬度
-  const mx = Math.max(1, ...ISS_YEARS.map(y=>d.catsIss.reduce((s,c)=>s+issSum(y,c),0)/100), ...MAT_YEARS.map(y=>d.catsMat.reduce((s,c)=>s+matSum(y,c),0)/100));
+  const mx = Math.max(1, ...ISS_YEARS.map(y=>d.catsIss.reduce((s,c)=>s+issSum(y,c),0)/100), ...MAT9_YEARS.map(y=>d.catsMat.reduce((s,c)=>s+matSum(y,c),0)/100));
   const pick = (kind, years) => (e, els) => { if(!els || !els.length) return; const y = years[els[0].index]; SEL9[kind] = SEL9[kind]===y ? null : y; drawT9Sel(d); };
   const opts = (kind, years) => ({onClick:pick(kind, years), onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
     layout:{padding:{top:22}}, plugins:{legend:{display:true}},
     scales:{x:{stacked:true, ticks:{color:css('--muted'), maxRotation:0, minRotation:0, autoSkip:false}, grid:{display:false}},
             y:{stacked:true, beginAtZero:true, suggestedMax:mx*1.08, ticks:{color:css('--muted')}, grid:{color:css('--line')}, afterFit:s=>{ s.width = 56; }}}});
   chart('c9iss', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:ISS_YEARS.map(y=>twoLine(esgYearLabel(y))), datasets:sets(ISS_YEARS, issSum, d.catsIss)}, options:opts('iss', ISS_YEARS)});
-  chart('c9mat', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:MAT_YEARS.map(y=>twoLine(matYearLabel(y))), datasets:sets(MAT_YEARS, matSum, d.catsMat)}, options:opts('mat', MAT_YEARS)});
+  chart('c9mat', {type:'bar', plugins:[stackTotals, legendGap], data:{labels:MAT9_YEARS.map(y=>twoLine(matYearLabel(y))), datasets:sets(MAT9_YEARS, matSum, d.catsMat)}, options:opts('mat', MAT9_YEARS)});
   // 各年度各類 ESG 債券金額
   const sumTab = (el, years, labelOf, f, head, cats) => {
     const rows = years.map(y=>{ const o = {y:labelOf(y), all:0}; cats.forEach(c=>{ o[c] = f(y,c); o.all += o[c]; }); return o; });
@@ -1635,7 +1637,7 @@ function renderT9(){
     t.querySelectorAll('tbody td:first-child').forEach(td=>{ td.style.whiteSpace = 'nowrap'; });
   };
   sumTab($('tb9iss'), ISS_YEARS, esgYearLabel, issSum, '發行年度', d.catsIss);
-  sumTab($('tb9mat'), MAT_YEARS, matYearLabel, matSum, '到期年度', d.catsMat);
+  sumTab($('tb9mat'), MAT9_YEARS, matYearLabel, matSum, '到期年度', d.catsMat);
   $('q9note').textContent = `依櫃買中心永續發展債券名單，對照上櫃債券發行月報表與流通在外餘額月報表（${ISS.outMonth}）計算，新台幣計價，單位：億元。到期金額以流通在外餘額計，分期還本依還本方式拆到各年度。發行金額另含地方政府債，以及最近一期月報之後發行的 ESG 債券（依櫃買中心名單的發行金額，無到期資料，不列入到期金額）；不含轉換公司債。櫃買中心名單只列流通在外的債券，已到期的 ESG 債券可能未列入發行金額。點選圖上的年度，該圖下方列出該年度的 ESG 債券，再點一次即可收合。`;
   drawT9Sel(d); drawT9Top(d);
 }
