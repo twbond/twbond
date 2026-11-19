@@ -413,10 +413,8 @@ body.pdf-mode .chartbox{height:280px}
         <button class="btn" id="b4">查詢</button>
       </div>
       <div id="info4" class="note"></div>
-      <div class="chartbox"><canvas id="c4"></canvas></div>
-    </div>
-    <div class="card">
-      <h2>歷史成交紀錄</h2>
+      <div class="chartbox" id="cb4" style="display:none"><canvas id="c4"></canvas></div>
+      <h3 id="h4R" style="display:none">歷史成交紀錄</h3>
       <div class="tw scroll" id="tb4"></div>
     </div>
 
@@ -1082,9 +1080,12 @@ DAYS.forEach(d=>{ (d.e||[]).forEach(r=>NAMES[r[0]]=r[1]); (d.o||[]).forEach(r=>N
 $('dl4').innerHTML = Object.keys(NAMES).sort().map(c=>`<option value="${esc(c)}">${esc(NAMES[c])}</option>`).join('');
 function renderT4(){
   const q = $('q4').value.trim();
-  if(!q){ $('info4').textContent='請輸入債券代號或名稱。'; $('tb4').innerHTML=''; if(charts.c4){charts.c4.destroy(); delete charts.c4;} return; }
+  // chart and history appear only after a successful query (no empty chart area before that)
+  const show4 = on => { $('cb4').style.display = on ? '' : 'none'; $('h4R').style.display = on ? '' : 'none'; if(!on){ $('tb4').innerHTML=''; if(charts.c4){charts.c4.destroy(); delete charts.c4;} } };
+  if(!q){ $('info4').textContent='請輸入債券代號或名稱。'; show4(false); return; }
   let code = NAMES[q.toUpperCase()] ? q.toUpperCase() : Object.keys(NAMES).find(c=>NAMES[c]===q) || Object.keys(NAMES).find(c=>NAMES[c].includes(q));
-  if(!code){ $('info4').textContent='找不到符合的債券。'; $('tb4').innerHTML=''; return; }
+  if(!code){ $('info4').textContent='找不到符合的債券。'; show4(false); return; }
+  show4(true);
   const days = rangeDays();
   const rows = days.flatMap(d=>recs(d).filter(r=>r.code===code));
   const t = typeOf(code);
