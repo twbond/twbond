@@ -298,7 +298,7 @@ body.pdf-mode .chartbox{height:280px}
     <div class="grid2">
       <div class="card">
         <h2>成交面額最大的 10 檔</h2>
-        <p class="note">等殖與處所合計，單位：億元。年期為距到期日的剩餘年限（以期間內最後成交日計）。</p>
+        <p class="note">等殖與處所合計，單位：億元。年期為距到期日的剩餘年限（以期間內最後成交日計）。點選任一檔，會在該列下方展開這檔在區間內的成交明細，再點一次即可收合。</p>
         <div class="tw" id="tbTop"></div>
       </div>
       <div class="card">
@@ -861,8 +861,14 @@ function renderT1(){
   // dy = remaining years to maturity on the latest trade day in the period (R is in date order)
   const by = {}; R.forEach(r=>{ const x = by[r.code] || (by[r.code]={code:r.code,name:r.name,type:r.type,face:0,fE:0,fO:0,dy:null}); x.face+=r.face||0; x[r.mkt==='E'?'fE':'fO']+=r.face||0; if(r.dy!=null) x.dy = r.dy; });
   Object.values(by).forEach(x=>{ if(x.type==='公司債'||x.type==='金融債'){ x.sub=SUB.has(x.code); x.subUnknown=!SUB_CHECKED.has(x.code); } });
-  table($('tbTop'), [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'dy',t:'年期(剩餘年)',c:1,f:v=>v==null?'–':fN(v,2)+' 年'},...RATING_COLS,{k:'type',t:'種類',l:1},{k:'fE',t:'等殖',f:fY},{k:'fO',t:'處所',f:fY},{k:'face',t:'合計',f:fY}],
-    Object.values(by), {sort:'face', limit:10, rowClass:subRow});
+  const top1Cols = [{k:'type',t:'種類',l:1},{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'dy',t:'年期(剩餘年)',c:1,f:v=>v==null?'–':fN(v,2)+' 年'},{k:'fE',t:'等殖',f:fY},{k:'fO',t:'處所',f:fY},{k:'face',t:'合計',f:fY},...RATING_COLS];
+  const top1Rows = Object.values(by);
+  // click a bond: its trade records open right under its row (click again to close)
+  const drawTop1 = () => table($('tbTop'), top1Cols, top1Rows,
+    {sort:'face', limit:10, rowClass:r=>[subRow(r), r.code===SEL1?'sel':''].join(' ').trim(),
+     onClick:r=>{ SEL1 = SEL1===r.code ? null : r.code; drawTop1(); },
+     after:(el)=>openRec3(el, RD, top1Cols.length, SEL1)});
+  drawTop1();
 
   const G = groupKeys(rangeDays());
   chart('c1', {type:'bar', data:{labels:G.map(g=>g.key), datasets:[
@@ -1041,6 +1047,7 @@ function renderT3(){
 
 // trade records of the bond picked in the top-20 table: opened right under its row (follows the history range; newest first)
 let SEL3 = null;
+let SEL1 = null;   // bond picked in the 總覽 top-10 table (same drop-down detail)
 // government-bond trades of the tenor picked in the per-tenor summary: opened right under its row (newest first)
 let SEL2 = null;
 let SEL3T = 'all';         // 公司債/金融債 殖利率與利差圖的年期（剩餘年期分組；'all' = 全部年期）
@@ -1063,18 +1070,18 @@ function openRec2(el, all, ncol){
     {k:'face',t:'成交面額(億)',f:fY},{k:'count',t:'筆數',f:fI}], rows, {sort:'d', rowClass:r=>'mkt-'+r.mkt});
 }
 
-function openRec3(el, days, ncol){
-  if(!SEL3) return;
+function openRec3(el, days, ncol, code = SEL3){
+  if(!code) return;
   const tr = el.querySelector(':scope > table > tbody > tr.sel');
   if(!tr) return;
-  const code = SEL3;
   const rows = days.flatMap(d=>recs(d).filter(r=>r.code===code));
+  const gov = rows.length && rows[0].type==='公債';
   const det = document.createElement('tr');
   det.className = 'rec3';
-  det.innerHTML = `<td colspan="${ncol}"><div class="rec3box"><div class="rhead"><b>${esc(code)} ${esc(NAMES[code]||'')}</b>${subTag({sub:SUB.has(code), subUnknown:!SUB_CHECKED.has(code)})}${secTag(code)}${esgTag(code)}<b style="margin-left:6px">成交明細</b><span class="note">${esc(rangeLabel())}｜有成交 ${new Set(rows.map(r=>r.d)).size} 天，合計面額 ${fY(sum(rows))} 億元｜再點一次該列即可收合</span></div><div class="tw scroll"></div></div></td>`;
+  det.innerHTML = `<td colspan="${ncol}"><div class="rec3box"><div class="rhead"><b>${esc(code)} ${esc(NAMES[code]||'')}</b>${gov ? '' : subTag({sub:SUB.has(code), subUnknown:!SUB_CHECKED.has(code)}) + secTag(code)}${esgTag(code)}<b style="margin-left:6px">成交明細</b><span class="note">${esc(rangeLabel())}｜有成交 ${new Set(rows.map(r=>r.d)).size} 天，合計面額 ${fY(sum(rows))} 億元｜再點一次該列即可收合</span></div><div class="tw scroll"></div></div></td>`;
   tr.after(det);
   const mkTag = v => `<span class="tag mkt-${v}">${MKT[v]}</span>`;
-  table(det.querySelector('.tw'), [{k:'d',t:'成交日期',l:1},{k:'mkt',t:'市場',l:1,f:mkTag},{k:'face',t:'成交面額(億)',f:fY},{k:'yAvg',t:'平均殖利率%',f:v=>fN(v)},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},{k:'rp',t:'利差(bp)',f:v=>fN(v,2)},{k:'count',t:'筆數',f:fI}], rows,
+  table(det.querySelector('.tw'), [{k:'d',t:'成交日期',l:1},{k:'mkt',t:'市場',l:1,f:mkTag},{k:'face',t:'成交面額(億)',f:fY},{k:'yAvg',t:'平均殖利率%',f:v=>fN(v)},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},...(gov ? [] : [{k:'rp',t:'利差(bp)',f:v=>fN(v,2)}]),{k:'count',t:'筆數',f:fI}], rows,
     {sort:'d', rowClass:r=>'mkt-'+r.mkt});
 }
 
