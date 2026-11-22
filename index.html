@@ -79,7 +79,8 @@ h1,.card h2{font-family:"Noto Serif TC","PMingLiU",serif;font-weight:600}
 h1{font-size:24px;margin:0;letter-spacing:.06em;line-height:1.25}
 .sub{color:var(--muted);font-size:13px}
 .ctrls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
-label.c{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+label.c{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;max-width:100%;min-width:0;white-space:nowrap}
+label.c select{min-width:0;max-width:100%;text-overflow:ellipsis}
 select,input[type=text],input[type=date]{font:inherit;font-size:14px;padding:5px 8px;border:1px solid var(--line-strong);border-radius:4px;background:var(--card);color:var(--ink)}
 .asof{margin-top:4px;font-size:13px;color:var(--head-muted)}
 .asof b{color:var(--head-ink);font-weight:600;font-variant-numeric:tabular-nums}
