@@ -111,7 +111,7 @@ main{max-width:1280px;margin:0 auto;padding:22px 20px 60px}
 .kpi .d span{font-weight:600}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media (max-width:900px){.grid2{grid-template-columns:1fr}}
-#t9 .grid2 > div{min-width:0}
+.grid2 > *{min-width:0}
 #tb9selIss,#tb9selMat{margin-bottom:12px}
 .tw{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums lining-nums;font-feature-settings:"tnum" 1,"lnum" 1}
@@ -912,10 +912,10 @@ function renderT1(){
   drawTop1();
 
   const G = groupKeys(rangeDays());
-  chart('c1', {type:'bar', data:{labels:G.map(g=>g.key), datasets:[
+  chart('c1', {type:'bar', plugins:[stackTotals], data:{labels:G.map(g=>g.key), datasets:[
     {label:'等殖', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>r.mkt==='E')),0)/YI), backgroundColor:css('--c-mkt-e'), stack:'s'},
     {label:'處所', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>r.mkt==='O')),0)/YI), backgroundColor:css('--c-mkt-o'), stack:'s'}]},
-    options:{scales:{x:{stacked:true,ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:16},grid:{display:false}},y:{stacked:true,ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+    options:{layout:{padding:{top:20}}, plugins:{stackTotals:{digits:'auto'}}, scales:{x:{stacked:true,ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:16},grid:{display:false}},y:{stacked:true,grace:'8%',ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
 }
 
 // ================= TAB 2 =================
@@ -964,10 +964,10 @@ function renderT2(){
   const days = rangeDays(), G = groupKeys(days);
   const tSel = $('g2Tenor').value, mSel = $('g2Mkt').value;
   const filt = r => r.type==='公債' && (tSel==='all' || r.tenor===Number(tSel)) && (mSel==='all' || r.mkt===mSel);
-  chart('c2a', {type:'bar', data:{labels:G.map(g=>g.key), datasets:[
+  chart('c2a', {type:'bar', plugins:[stackTotals], data:{labels:G.map(g=>g.key), datasets:[
     {label:'指標券', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>filt(r)&&r.hot)),0)/YI), backgroundColor:css('--hot'), stack:'s'},
     {label:'非指標券', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>filt(r)&&!r.hot)),0)/YI), backgroundColor:css('--cold'), stack:'s'}]},
-    options:{scales:{x:{stacked:true,ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:16},grid:{display:false}},y:{stacked:true,title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+    options:{layout:{padding:{top:20}}, plugins:{stackTotals:{digits:'auto'}}, scales:{x:{stacked:true,ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:16},grid:{display:false}},y:{stacked:true,grace:'8%',title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
 
   const all = days.flatMap(d=>recs(d).filter(r=>r.type==='公債'));
   const hrows = GOV_TENORS.map(t=>{
@@ -1022,10 +1022,10 @@ function renderT3(){
 
   const days = rangeDays(), G = groupKeys(days), mSel = $('g3Mkt').value;
   const filt = r => r.type!=='公債' && (mSel==='all' || r.mkt===mSel);
-  chart('c3a', {type:'bar', data:{labels:G.map(g=>g.key), datasets:[
+  chart('c3a', {type:'bar', plugins:[stackTotals], data:{labels:G.map(g=>g.key), datasets:[
     {label:'公司債', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>filt(r)&&r.type==='公司債')),0)/YI), backgroundColor:css('--corp'), stack:'s'},
     {label:'金融債', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>filt(r)&&r.type==='金融債')),0)/YI), backgroundColor:css('--fin'), stack:'s'}]},
-    options:{scales:{x:{stacked:true,ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:16},grid:{display:false}},y:{stacked:true,title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
+    options:{layout:{padding:{top:20}}, plugins:{stackTotals:{digits:'auto'}}, scales:{x:{stacked:true,ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:16},grid:{display:false}},y:{stacked:true,grace:'8%',title:{display:true,text:'億元',color:css('--muted')},ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
 
   // 年期（依剩餘年期分組）：SEL3T = 'all' 或 1/2/3/5/7/10/15
   const grpRR = G.map(g=>g.days.flatMap(d=>recs(d).filter(r=>r.type!=='公債')));
@@ -1501,12 +1501,25 @@ const legendGap = {id:'legendGap', beforeInit(ch){ const lg = ch.legend; if(!lg 
 const stackTotals = {id:'stackTotals', afterDatasetsDraw(ch){
   const {ctx} = ch, n = ch.data.labels.length, vis = ch.data.datasets.map((d,i)=>i).filter(i=>ch.isDatasetVisible(i));
   if(!vis.length) return;
+  // options.plugins.stackTotals.digits: decimals shown (default 0; 'auto' = 2 / 1 / 0 by size). When bars are too
+  // narrow for every label (many daily bars), labels are placed in priority order — latest bar first, then largest
+  // totals — and any label that would overlap one already placed is skipped
+  const opt = (ch.options.plugins && ch.options.plugins.stackTotals) || {};
+  const tots = ch.data.labels.map((_,i)=>vis.reduce((s,k)=>s+(+ch.data.datasets[k].data[i]||0),0));
+  const mx = Math.max(0, ...tots);
+  const dg = opt.digits==='auto' ? (mx < 100 ? 2 : mx < 1000 ? 1 : 0) : (opt.digits || 0);
   ctx.save(); ctx.font = '600 12px "IBM Plex Sans","Segoe UI","Microsoft JhengHei",sans-serif'; ctx.fillStyle = css('--ink'); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-  for(let i=0;i<n;i++){
-    const tot = vis.reduce((s,k)=>s+(+ch.data.datasets[k].data[i]||0),0); if(!tot) continue;
-    const top = Math.min(...vis.map(k=>ch.getDatasetMeta(k).data[i].y));
-    ctx.fillText(Math.round(tot).toLocaleString('zh-TW'), ch.getDatasetMeta(vis[0]).data[i].x, top - 4);
-  }
+  const idx = tots.map((t,i)=>i).filter(i=>tots[i]);
+  const last = idx.length ? idx[idx.length-1] : -1;
+  idx.sort((a,b)=> a===last ? -1 : b===last ? 1 : tots[b]-tots[a]);
+  const placed = [];
+  idx.forEach(i=>{
+    const txt = tots[i].toLocaleString('zh-TW',{minimumFractionDigits:dg,maximumFractionDigits:dg});
+    const x = ch.getDatasetMeta(vis[0]).data[i].x, w = ctx.measureText(txt).width, l = x - w/2 - 2, r = x + w/2 + 2;
+    if(placed.some(p=>l < p[1] && r > p[0])) return;
+    placed.push([l, r]);
+    ctx.fillText(txt, x, Math.min(...vis.map(k=>ch.getDatasetMeta(k).data[i].y)) - 4);
+  });
   ctx.restore(); }};
 // 單選一種債券時，直條依「原發行年期」分段；主要年期各自一段，其餘歸「其他」，99 年以上（永續）或無年期歸「無到期日」
 const TERM_MAIN = {G:[2,5,7,10,15,20,30], C:[2,3,5,7,10,15], F:[2,3,5,7,10,15]};
