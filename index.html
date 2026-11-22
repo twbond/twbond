@@ -93,6 +93,7 @@ select,input[type=text],input[type=date]{font:inherit;font-size:14px;padding:5px
 .ribbon .c.up{color:var(--up-h)}.ribbon .c.down{color:var(--down-h)}.ribbon .c.flat{color:var(--head-muted)}
 .ribbon .y{grid-area:y;font-size:25px;font-weight:500;line-height:1.15;color:var(--brass);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .ribbon .s{grid-area:s;justify-self:end;font-size:11.5px;color:var(--head-muted);white-space:nowrap}
+.ribbon .s.today{display:none}
 nav{max-width:1280px;margin:0 auto;display:flex;gap:2px;flex-wrap:wrap}
 nav button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--head-muted);padding:11px 14px 10px;cursor:pointer;box-shadow:inset 0 -2px 0 transparent}
 nav button:hover{color:var(--head-ink)}
@@ -181,7 +182,7 @@ tbody tr.rec3 > td{background:var(--rec-bg)!important;padding:0 0 0 3px;box-shad
 #q4{min-width:0;width:320px;max-width:100%}
 @media (max-width:1180px){.ribbon{grid-template-columns:repeat(5,minmax(0,1fr))}.ribbon .rl{display:none}.ribbon .rl + .rb{border-left:0}.ribbon .rb{grid-template-areas:"t c" "y y" "s s"}.ribbon .s{justify-self:start}}
 @media (max-width:900px){header{position:static}}
-@media (max-width:600px){.ribbon .rb{padding:8px 6px}.ribbon .y{font-size:17px}.ribbon .c{grid-area:s;justify-self:start;font-size:11.5px}.ribbon .s{display:none}.ribbon .rb{grid-template-areas:"t t" "y y" "s s"}}
+@media (max-width:600px){.ribbon .rb{padding:8px 6px;grid-template-areas:"t t" "y y" "c c" "s s"}.ribbon .y{font-size:17px}.ribbon .c{grid-area:c;justify-self:start;font-size:11.5px}.ribbon .s,.ribbon .s.today{display:block;justify-self:start;font-size:11px;line-height:1.35;margin-top:2px;font-variant-numeric:tabular-nums}.ribbon .sl{display:block;font-size:10.5px}}
 .print-only{display:none}
 #toast{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;max-width:min(92vw,560px);padding:10px 16px;border-radius:8px;background:var(--head);color:var(--head-ink);font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 #toast.err{background:#a61e1e}
@@ -1801,9 +1802,9 @@ function renderRibbon(d){
     const cls = ch==null ? 'flat' : ch>0 ? 'up' : ch<0 ? 'down' : 'flat';
     const chTxt = ch==null ? '' : ch===0 ? '持平' : `${ch>0?'▲':'▼'}${Math.abs(ch).toFixed(1)} bp`;
     const last = b && b[6] ? String(b[6]).replace(/\//g,'-') : '';
-    const stale = last && last!==d ? `最近成交 ${last.slice(5).replace('-','/')}` : '';
+    const md = last ? last.slice(5).replace('-','/') : '', isToday = last===d;   // 手機版一律顯示成交日；桌機只在當日無成交時顯示
     return `<div class="rb" title="${esc(t+'年期指標公債 '+(b?b[1]:''))}"><span class="t">${t}年</span><span class="c ${cls}">${chTxt}</span>`
-      + `<span class="y">${y==null?'—':y.toFixed(4)}</span><span class="s">${stale}</span></div>`;
+      + `<span class="y">${y==null?'—':y.toFixed(4)}</span><span class="s${isToday?' today':''}">${md ? '<span class="sl">'+(isToday?'當日成交':'最近成交')+' </span>'+md : ''}</span></div>`;
   }).join('');
 }
 Object.keys(RENDER).forEach(k=>{ const f = RENDER[k]; RENDER[k] = ()=>{ updateAsof(); f(); }; });
