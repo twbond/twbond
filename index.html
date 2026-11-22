@@ -14,111 +14,128 @@
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Serif+TC:wght@600&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* one primary (deep navy blue) + one secondary family (teal/indigo) + greys; red/green only for changes */
-  --bg:#f3f5f8; --card:#ffffff; --ink:#1a2433; --muted:#5f6b7a; --line:#e7eaef;
-  --head:#0f2742; --head-ink:#ffffff; --head-muted:rgba(255,255,255,.72);
-  --accent:#1e4f8a; --accent-soft:#e9eff7; --hot:#1e4f8a; --cold:#98a2b0; --cmp:#b3bcc8;
-  --yc-now:#1e4f8a; --yc-start:#e8891c; --yc-wk:#2e9e6a; --yc-mo:#c2417a;
-  --bk-buy:#5b8fd0; --bk-sell:#f0a35b; --bk-net:#1f2d3d;
-  --corp:#13807a; --fin:#3f51a3; --up:#c92a2a; --down:#2b8a3e; --sub:#b7791f; --sub-bg:#fdf6e6;
-  --th-bg:#eef1f5; --zebra:#f8f9fb; --line-strong:#cfd5de;
-  --hot-bg:#e3ebf5; --cold-bg:#eef0f3; --sub-line:#e2c38a;
-  --sec:#3f51a3; --sec-bg:#eef0fa; --sec-line:#b8c0e4;
-  --esg:#2f7d32; --esg-bg:#eaf5ea; --esg-line:#a9d3ab;
-  --q-g:#1e4f8a; --q-f:#e8891c; --q-c:#2e9e6a;
-  --rec-bg:#eaf1fa; --mkt-e-bg:#f5f8fd; --mkt-o-bg:#f1f9f8; --mkt-o-tag:#dcefed;
+  /* ledger green (header) + brass (today's rates, the one highlight) + ledger teal (interaction, main series) on a cool sage paper; red/green only for changes (Taiwan convention: red = up) */
+  --bg:#eef0ec; --card:#fbfcfa; --ink:#1b2422; --muted:#5b6662; --line:#dde2dc; --line-strong:#c3cbc4;
+  --head:#1d3a35; --head-ink:#f3f1e8; --head-muted:rgba(243,241,232,.66); --head-line:rgba(243,241,232,.14);
+  --brass:#c9a54e; --brass-ink:#7d6320; --up-h:#ff9b8c; --down-h:#86dba6;
+  --accent:#2d6a60; --accent-soft:#e1ebe7; --hot:#2d6a60; --cold:#9aa59f; --cmp:#bcc5bf;
+  --yc-now:#a5822c; --yc-start:#7b6aa6; --yc-wk:#4f8f84; --yc-mo:#a3aea8;
+  --bk-buy:#196c5e; --bk-sell:#ba7f14; --bk-net:#1b2422;
+  --corp:#ba7f14; --fin:#535eb8; --up:#c0392b; --down:#2e7d4f; --sub:#94650f; --sub-bg:#f7f0dd;
+  --th-bg:#e6eae5; --zebra:#f4f6f2;
+  --hot-bg:#dce9e4; --cold-bg:#eceeea; --sub-line:#dcc28a;
+  --sec:#4d5795; --sec-bg:#eceef7; --sec-line:#bfc4e0;
+  --esg:#3d7a3a; --esg-bg:#e7f1e4; --esg-line:#afd0a8;
+  --q-g:#007f62; --q-f:#535eb8; --q-c:#ba7f14;
+  --c-mkt-e:#196c5e; --c-mkt-o:#88beb1; --esg-c1:#428731; --esg-c4:#984780; --tm1:#8fbcb1; --tm2:#72a89b; --tm3:#549486; --tm4:#338171; --tm5:#006e5e; --tm6:#005a4a; --tm7:#004638; --tm8:#003326; --tm-oth:#c0bdb7; --tm-none:#88867f;
+  --rec-bg:#e4ede9; --mkt-e-bg:#f1f6f3; --mkt-o-bg:#f6f3e9; --mkt-o-tag:#ece4cc;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#10151c; --card:#18202a; --ink:#e4e8ee; --muted:#9aa5b4; --line:#28313d;
-    --head:#0b1a2c; --head-ink:#ffffff; --head-muted:rgba(255,255,255,.68);
-    --accent:#7fa8dc; --accent-soft:#1b2a3d; --hot:#7fa8dc; --cold:#7c8796; --cmp:#566170;
-    --yc-now:#7fa8dc; --yc-start:#f2a64a; --yc-wk:#5cc493; --yc-mo:#e889b4;
-    --bk-buy:#5f8fcf; --bk-sell:#e39a52; --bk-net:#eef2f7;
-    --corp:#4fbfb6; --fin:#8f9ce0; --up:#ff6b6b; --down:#69db7c; --sub:#e9b955; --sub-bg:rgba(233,185,85,.10);
-    --th-bg:#1f2834; --zebra:#1b232e; --line-strong:#3a4554;
-    --hot-bg:#1d2c40; --cold-bg:#252d38; --sub-line:#7a6232;
-    --sec:#9fabe8; --sec-bg:rgba(143,156,224,.12); --sec-line:#3d4878; --q-g:#6ea0e0; --q-f:#f2a64a; --q-c:#5cc493;
-    --esg:#7fd283; --esg-bg:rgba(127,210,131,.12); --esg-line:#2f6b33;
-    --rec-bg:#1a2638; --mkt-e-bg:#1b2433; --mkt-o-bg:#18292a; --mkt-o-tag:#1d3533;
+    --bg:#111715; --card:#18201e; --ink:#e2e7e3; --muted:#97a39d; --line:#26302d; --line-strong:#38443f;
+    --head:#0d1f1b; --head-ink:#f1eee2; --head-muted:rgba(241,238,226,.62); --head-line:rgba(241,238,226,.12);
+    --brass:#d4b462; --brass-ink:#d4b462; --up-h:#ff8f80; --down-h:#7fd6a0;
+    --accent:#7fbcae; --accent-soft:#1d2c28; --hot:#7fbcae; --cold:#77837d; --cmp:#4d5853;
+    --yc-now:#d4b462; --yc-start:#a597d0; --yc-wk:#6fb0a2; --yc-mo:#6c7872;
+    --bk-buy:#79baab; --bk-sell:#c0851f; --bk-net:#eef1ec;
+    --corp:#c0851f; --fin:#7684da; --up:#ff7a6b; --down:#6fcf8e; --sub:#e2b75a; --sub-bg:rgba(226,183,90,.10);
+    --th-bg:#1e2724; --zebra:#1b2321;
+    --hot-bg:#1d2e2a; --cold-bg:#232b28; --sub-line:#6e5a2c;
+    --sec:#a4acdf; --sec-bg:rgba(164,172,223,.12); --sec-line:#424a7a; --q-g:#1f9b82; --q-f:#7684da; --q-c:#c0851f; --c-mkt-e:#79baab; --c-mkt-o:#2f7063; --esg-c1:#60a750; --esg-c4:#bf6aa5; --tm1:#005f4e; --tm2:#007262; --tm3:#338676; --tm4:#539a8b; --tm5:#70aea0; --tm6:#8cc3b6; --tm7:#a8d8cc; --tm8:#c5ede3; --tm-oth:#6b6963; --tm-none:#9a978f;
+    --esg:#8fd08a; --esg-bg:rgba(143,208,138,.12); --esg-line:#355f32;
+    --rec-bg:#1a2926; --mkt-e-bg:#192421; --mkt-o-bg:#1f2420; --mkt-o-tag:#2e2a1d;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#10151c; --card:#18202a; --ink:#e4e8ee; --muted:#9aa5b4; --line:#28313d;
-  --head:#0b1a2c; --head-ink:#ffffff; --head-muted:rgba(255,255,255,.68);
-  --accent:#7fa8dc; --accent-soft:#1b2a3d; --hot:#7fa8dc; --cold:#7c8796; --cmp:#566170;
-  --yc-now:#7fa8dc; --yc-start:#f2a64a; --yc-wk:#5cc493; --yc-mo:#e889b4;
-  --bk-buy:#5f8fcf; --bk-sell:#e39a52; --bk-net:#eef2f7;
-  --corp:#4fbfb6; --fin:#8f9ce0; --up:#ff6b6b; --down:#69db7c; --sub:#e9b955; --sub-bg:rgba(233,185,85,.10);
-  --th-bg:#1f2834; --zebra:#1b232e; --line-strong:#3a4554;
-  --hot-bg:#1d2c40; --cold-bg:#252d38; --sub-line:#7a6232;
-  --sec:#9fabe8; --sec-bg:rgba(143,156,224,.12); --sec-line:#3d4878; --q-g:#6ea0e0; --q-f:#f2a64a; --q-c:#5cc493;
-  --esg:#7fd283; --esg-bg:rgba(127,210,131,.12); --esg-line:#2f6b33;
-  --rec-bg:#1a2638; --mkt-e-bg:#1b2433; --mkt-o-bg:#18292a; --mkt-o-tag:#1d3533;
+  --bg:#111715; --card:#18201e; --ink:#e2e7e3; --muted:#97a39d; --line:#26302d; --line-strong:#38443f;
+  --head:#0d1f1b; --head-ink:#f1eee2; --head-muted:rgba(241,238,226,.62); --head-line:rgba(241,238,226,.12);
+  --brass:#d4b462; --brass-ink:#d4b462; --up-h:#ff8f80; --down-h:#7fd6a0;
+  --accent:#7fbcae; --accent-soft:#1d2c28; --hot:#7fbcae; --cold:#77837d; --cmp:#4d5853;
+  --yc-now:#d4b462; --yc-start:#a597d0; --yc-wk:#6fb0a2; --yc-mo:#6c7872;
+  --bk-buy:#79baab; --bk-sell:#c0851f; --bk-net:#eef1ec;
+  --corp:#c0851f; --fin:#7684da; --up:#ff7a6b; --down:#6fcf8e; --sub:#e2b75a; --sub-bg:rgba(226,183,90,.10);
+  --th-bg:#1e2724; --zebra:#1b2321;
+  --hot-bg:#1d2e2a; --cold-bg:#232b28; --sub-line:#6e5a2c;
+  --sec:#a4acdf; --sec-bg:rgba(164,172,223,.12); --sec-line:#424a7a; --q-g:#1f9b82; --q-f:#7684da; --q-c:#c0851f; --c-mkt-e:#79baab; --c-mkt-o:#2f7063; --esg-c1:#60a750; --esg-c4:#bf6aa5; --tm1:#005f4e; --tm2:#007262; --tm3:#338676; --tm4:#539a8b; --tm5:#70aea0; --tm6:#8cc3b6; --tm7:#a8d8cc; --tm8:#c5ede3; --tm-oth:#6b6963; --tm-none:#9a978f;
+  --esg:#8fd08a; --esg-bg:rgba(143,208,138,.12); --esg-line:#355f32;
+  --rec-bg:#1a2926; --mkt-e-bg:#192421; --mkt-o-bg:#1f2420; --mkt-o-tag:#2e2a1d;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;font-size:15px;line-height:1.5}
-header{background:var(--head);color:var(--head-ink);padding:14px 20px 0;position:sticky;top:0;z-index:5}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans","Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;font-size:15px;line-height:1.55}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+header{background:var(--head);color:var(--head-ink);padding:16px 20px 0;position:sticky;top:0;z-index:5}
 header .sub,header label.c{color:var(--head-muted)}
-header select,header input[type=date]{border-color:transparent}
-header .btn{border-color:rgba(255,255,255,.55);color:var(--head-ink)}
-header .btn:hover{background:rgba(255,255,255,.12)}
+header select,header input[type=date]{border-color:transparent;background:rgba(255,255,255,.94);color:#1b2422}
+header .btn{border-color:var(--head-line);color:var(--head-ink);background:rgba(255,255,255,.06)}
+header .btn:hover{background:rgba(255,255,255,.14)}
 header #customRange{color:var(--head-muted)!important}
-header #dateNote{color:#ffd88a}
-.hrow{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;max-width:1280px;margin:0 auto}
-h1{font-size:20px;margin:0}
+header #dateNote{color:var(--brass)}
+.hrow{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;max-width:1280px;margin:0 auto}
+h1,.card h2{font-family:"Noto Serif TC","PMingLiU",serif;font-weight:600}
+h1{font-size:24px;margin:0;letter-spacing:.06em;line-height:1.25}
 .sub{color:var(--muted);font-size:13px}
-.ctrls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ctrls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
 label.c{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
-select,input[type=text],input[type=date]{font:inherit;font-size:14px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
-nav{max-width:1280px;margin:12px auto 0;display:flex;gap:4px;flex-wrap:wrap}
-nav button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--head-muted);padding:9px 14px 10px;border-radius:6px 6px 0 0;cursor:pointer}
+select,input[type=text],input[type=date]{font:inherit;font-size:14px;padding:5px 8px;border:1px solid var(--line-strong);border-radius:4px;background:var(--card);color:var(--ink)}
+.asof{margin-top:4px;font-size:13px;color:var(--head-muted)}
+.asof b{color:var(--head-ink);font-weight:600;font-variant-numeric:tabular-nums}
+/* benchmark yield ribbon: the page's one strong element */
+.ribbon{max-width:1280px;margin:12px auto 0;display:grid;grid-template-columns:auto repeat(5,minmax(0,1fr));border-top:1px solid var(--head-line);border-bottom:1px solid var(--head-line)}
+.ribbon .rl{padding:10px 18px 10px 0;font-size:12.5px;line-height:1.4;color:var(--head-muted);align-self:center}
+.ribbon .rb{padding:6px 14px 7px;border-left:1px solid var(--head-line);display:grid;grid-template-columns:auto 1fr;grid-template-areas:"t c" "y s";align-items:baseline;column-gap:8px;min-width:0}
+.ribbon .t{grid-area:t;font-size:12.5px;color:var(--head-muted)}
+.ribbon .c{grid-area:c;justify-self:end;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.ribbon .c.up{color:var(--up-h)}.ribbon .c.down{color:var(--down-h)}.ribbon .c.flat{color:var(--head-muted)}
+.ribbon .y{grid-area:y;font-size:25px;font-weight:500;line-height:1.15;color:var(--brass);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.ribbon .s{grid-area:s;justify-self:end;font-size:11.5px;color:var(--head-muted);white-space:nowrap}
+nav{max-width:1280px;margin:0 auto;display:flex;gap:2px;flex-wrap:wrap}
+nav button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--head-muted);padding:11px 14px 10px;cursor:pointer;box-shadow:inset 0 -2px 0 transparent}
 nav button:hover{color:var(--head-ink)}
-nav button.on{background:var(--bg);color:var(--accent);font-weight:600}
-main{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
+nav button.on{color:var(--head-ink);font-weight:600;box-shadow:inset 0 -3px 0 var(--brass)}
+main{max-width:1280px;margin:0 auto;padding:22px 20px 60px}
 .tab{display:none}.tab.on{display:block}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
-.card h2{font-size:16px;margin:0 0 4px}
-.card .note{color:var(--muted);font-size:12.5px;margin:0 0 12px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px 20px;margin-bottom:18px}
+.card h2{font-size:18px;margin:0 0 4px;letter-spacing:.02em}
+.card .note{color:var(--muted);font-size:12.5px;margin:0 0 12px;max-width:80ch;line-height:1.65}
+/* summary figures: one ruled strip, not a row of cards */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:18px;background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.kpi{padding:14px 18px;border-left:1px solid var(--line);margin-left:-1px}
 .kpi .k{color:var(--muted);font-size:12.5px}
-.kpi .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
-.kpi .u{font-size:12px;color:var(--muted);font-weight:400;margin-left:3px}
+.kpi .v{font-size:26px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.25;letter-spacing:-.01em}
+.kpi .u{font-size:12px;color:var(--muted);font-weight:400;margin-left:4px;letter-spacing:0}
 .kpi .d{font-size:12px;color:var(--muted);margin-top:2px}
-.kpi .d span{font-weight:700}
-.kpi{border-top:3px solid var(--accent)}
-.asof{display:inline-flex;gap:8px;align-items:baseline;margin-top:6px;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.10);font-size:13px;color:var(--head-muted)}
-.asof b{color:var(--head-ink);font-size:16px;letter-spacing:.3px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.kpi .d span{font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media (max-width:900px){.grid2{grid-template-columns:1fr}}
 #t9 .grid2 > div{min-width:0}
 #tb9selIss,#tb9selMat{margin-bottom:12px}
 .tw{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums lining-nums;font-feature-settings:"tnum" 1,"lnum" 1}
-td{font-family:"Segoe UI","Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif}
-th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+td{font-family:"IBM Plex Sans","Segoe UI","Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif}
+th,td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
 th{color:var(--muted);font-weight:600;font-size:12.5px;background:var(--th-bg);position:sticky;top:0;z-index:1;border-bottom:1px solid var(--line-strong)}
 tbody tr:nth-child(even) td{background:var(--zebra)}
-td.em{font-weight:700;color:var(--ink)}
+td.em{font-weight:600;color:var(--ink)}
 td.dim{color:var(--muted)}
 .tw.scroll{max-height:560px;overflow:auto}
 th.s{cursor:pointer;user-select:none}
 th.s:hover{color:var(--accent)}
 td.l,th.l{text-align:left}
 td.c,th.c{text-align:center}
-tr.sum td{font-weight:700;border-top:2px solid var(--line)}
+tr.sum td{font-weight:600;border-top:1.5px solid var(--line-strong)}
 tbody tr:hover td{background:var(--accent-soft)}
-.tag{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:10px;font-weight:600}
+.tag{display:inline-block;font-size:11.5px;padding:0 6px;border-radius:3px;font-weight:600;line-height:1.6}
 .tag.hot{background:var(--hot-bg);color:var(--hot)}
 .tag.cold{background:var(--cold-bg);color:var(--muted)}
 .tag.sub{background:var(--sub-bg);color:var(--sub);border:1px solid var(--sub-line);margin-left:6px}
 .tag.sec{background:var(--sec-bg);color:var(--sec);border:1px solid var(--sec-line);margin-left:6px}
 .tag.esg{background:var(--esg-bg);color:var(--esg);border:1px solid var(--esg-line);margin-left:6px}
 /* bond basic-info card */
-.binfo{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:8px}
+.binfo{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:8px}
 .binfo div{padding:8px 12px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-width:0}
 .binfo dt{font-size:12px;color:var(--muted);margin:0 0 2px}
 .binfo dd{margin:0;font-weight:600;overflow-wrap:anywhere}
@@ -126,44 +143,46 @@ tbody tr:hover td{background:var(--accent-soft)}
 .bhead{display:flex;flex-wrap:wrap;align-items:center;gap:4px 0;margin:4px 0 2px}
 .bhead b{font-size:16px}
 td .rt{color:var(--muted);font-size:12px;font-weight:400}
-td .who{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:0 5px;margin-left:4px;font-weight:400}
+td .who{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 5px;margin-left:4px;font-weight:400}
 td .who.g{color:var(--sec);border-color:var(--sec-line);background:var(--sec-bg)}
 #tb6iss table,#tb6mat table{table-layout:fixed}
 #tb6iss th,#tb6iss td,#tb6mat th,#tb6mat td{width:20%}
-.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;margin:0 0 10px}
-.seg button{font:inherit;font-size:13px;border:0;border-left:1px solid var(--line-strong);background:var(--card);color:var(--ink);padding:5px 14px;cursor:pointer}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:4px;overflow:hidden;margin:0 0 10px}
+.seg button{font:inherit;font-size:13px;border:0;border-left:1px solid var(--line-strong);background:var(--card);color:var(--ink);padding:5px 13px;cursor:pointer}
 .seg button:first-child{border-left:0}
-.seg button.on{background:var(--accent);color:#fff;font-weight:600}
-h3.sub-h{font-size:14px;margin:14px 0 6px;padding-left:8px;border-left:3px solid var(--accent)}
-.tag.unk{background:transparent;color:var(--muted);border:1px dashed var(--line);font-weight:400;margin-left:6px}
+.seg button:hover{background:var(--accent-soft)}
+.seg button.on{background:var(--accent);color:var(--card);font-weight:600}
+h3.sub-h{font-size:14px;font-weight:600;margin:16px 0 6px;color:var(--ink)}
+.tag.unk{background:transparent;color:var(--muted);border:1px dashed var(--line-strong);font-weight:400;margin-left:6px}
 tbody tr.subrow td{background:var(--sub-bg)}
 tbody tr.subrow td:first-child{box-shadow:inset 3px 0 0 var(--sub)}
 tbody tr.click{cursor:pointer}
 tbody tr.sel td{background:var(--accent-soft);font-weight:600}
 tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
-tbody tr.click{cursor:pointer}
 /* trade records opened under the picked top-20 row */
 tbody tr.rec3 > td{background:var(--rec-bg)!important;padding:0 0 0 3px;box-shadow:inset 3px 0 0 var(--accent)}
 .rec3box{padding:10px 12px 12px}
 .rec3box .rhead{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin-bottom:6px;text-align:left;white-space:normal}
 .rec3box .rhead .note{margin:0;font-size:12px}
-.rec3box .tw.scroll{max-height:320px;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.rec3box .tw.scroll{max-height:320px;background:var(--card);border:1px solid var(--line);border-radius:4px}
 .rec3box tbody tr.mkt-E td{background:var(--mkt-e-bg)}
 .rec3box tbody tr.mkt-O td{background:var(--mkt-o-bg)}
 .tag.mkt-E{background:var(--hot-bg);color:var(--accent)}
-.tag.mkt-O{background:var(--mkt-o-tag);color:var(--corp)}
-.legend{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+.tag.mkt-O{background:var(--mkt-o-tag);color:var(--brass-ink)}
+.legend{font-size:12.5px;color:var(--muted);margin:0 0 10px;max-width:110ch;line-height:1.75}
 .up{color:var(--up)}.down{color:var(--down)}
 .chartbox{position:relative;height:300px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
-.btn{font:inherit;font-size:13.5px;padding:6px 12px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:6px;cursor:pointer}
+.btn{font:inherit;font-size:13.5px;padding:5px 12px;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:4px;cursor:pointer}
 .btn:hover{background:var(--accent-soft)}
 .empty{color:var(--muted);padding:20px;text-align:center}
-.warn{background:#fff4e5;color:#8a4b00;border:1px solid #ffd8a8;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13.5px}
+.warn{background:#fbf3df;color:#7a4f00;border:1px solid #e6cf95;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:13.5px}
 #q4{min-width:0;width:320px;max-width:100%}
+@media (max-width:1180px){.ribbon{grid-template-columns:repeat(5,minmax(0,1fr))}.ribbon .rl{display:none}.ribbon .rl + .rb{border-left:0}.ribbon .rb{grid-template-areas:"t c" "y y" "s s"}.ribbon .s{justify-self:start}}
 @media (max-width:900px){header{position:static}}
+@media (max-width:600px){.ribbon .rb{padding:8px 6px}.ribbon .y{font-size:17px}.ribbon .c{grid-area:s;justify-self:start;font-size:11.5px}.ribbon .s{display:none}.ribbon .rb{grid-template-areas:"t t" "y y" "s s"}}
 .print-only{display:none}
-#toast{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;max-width:min(92vw,560px);padding:10px 16px;border-radius:8px;background:#1a2433;color:#fff;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+#toast{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;max-width:min(92vw,560px);padding:10px 16px;border-radius:8px;background:var(--head);color:var(--head-ink);font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 #toast.err{background:#a61e1e}
 @media print{#toast{display:none!important}}
 @media print{
@@ -259,6 +278,7 @@ body.pdf-mode .chartbox{height:280px}
       <button class="btn" id="bPrint" title="把目前這一頁輸出成 A4 PDF 檔，可直接寄送或列印">列印 / PDF</button>
     </div>
   </div>
+  <div class="ribbon" id="ribbon" aria-label="指標公債殖利率"></div>
   <nav id="nav">
     <button data-t="t1" class="on">總覽</button>
     <button data-t="t2">公債</button>
@@ -600,6 +620,7 @@ function wavg(rows, key, wkey='face'){ let s=0,w=0; rows.forEach(r=>{ if(r[key]!
 const sum = (rows,key='face') => rows.reduce((a,r)=>a+(r[key]||0),0);
 
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+if(window.Chart && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) Chart.defaults.animation = false;
 
 // subordinated bonds (full bond names checked on MOPS; matured bonds may be unchecked)
 const SUB = new Set(DATA.sub || []);
@@ -781,6 +802,25 @@ function chart(id, cfg){
   // only one to three dates (e.g. a single-day range): keep bars slim instead of filling the whole chart width
   const nLab = (cfg.data.labels || []).length;
   if(nLab && nLab <= 3) (cfg.data.datasets||[]).forEach(d=>{ if((d.type || cfg.type)==='bar' && d.maxBarThickness==null) d.maxBarThickness = 48; });
+  // bar marks: a 2px gap in the page colour between stacked segments (and around every bar), rounded 4px corners only on the outer end of each stack
+  const gap = css('--card');
+  const outerEnd = c => {
+    const ds = c.chart.data.datasets, me = ds[c.datasetIndex], v = +c.raw || 0;
+    if(!v) return 0; if(me.stack == null) return 4;
+    for(let k = c.datasetIndex + 1; k < ds.length; k++){
+      const o = ds[k];
+      if((o.type || cfg.type) !== 'bar' || o.stack !== me.stack || !c.chart.isDatasetVisible(k)) continue;
+      const w = +o.data[c.dataIndex] || 0; if(w && Math.sign(w) === Math.sign(v)) return 0;
+    }
+    return 4;
+  };
+  (cfg.data.datasets||[]).forEach(d=>{
+    if((d.type || cfg.type) !== 'bar') return;
+    if(d.borderColor == null) d.borderColor = gap;
+    if(d.borderWidth == null) d.borderWidth = d.stack ? {top:2} : 0;
+    if(d.borderRadius == null) d.borderRadius = c => { const r = outerEnd(c); return r ? {topLeft:r, topRight:r, bottomLeft:0, bottomRight:0} : 0; };
+    if(d.borderSkipped == null) d.borderSkipped = 'start';
+  });
   charts[id] = new Chart($(id), cfg);
 }
 
@@ -873,8 +913,8 @@ function renderT1(){
 
   const G = groupKeys(rangeDays());
   chart('c1', {type:'bar', data:{labels:G.map(g=>g.key), datasets:[
-    {label:'等殖', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>r.mkt==='E')),0)/YI), backgroundColor:css('--accent'), stack:'s'},
-    {label:'處所', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>r.mkt==='O')),0)/YI), backgroundColor:css('--corp'), stack:'s'}]},
+    {label:'等殖', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>r.mkt==='E')),0)/YI), backgroundColor:css('--c-mkt-e'), stack:'s'},
+    {label:'處所', data:G.map(g=>g.days.reduce((a,d)=>a+sum(recs(d).filter(r=>r.mkt==='O')),0)/YI), backgroundColor:css('--c-mkt-o'), stack:'s'}]},
     options:{scales:{x:{stacked:true,ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:16},grid:{display:false}},y:{stacked:true,ticks:{color:css('--muted')},grid:{color:css('--line')}}}}});
 }
 
@@ -943,7 +983,7 @@ function renderT2(){
     after:el=>openRec2(el, all, histCols.length)});
   drawHist();
 
-  const pal = [css('--cold'), css('--corp'), css('--accent'), css('--fin'), css('--sub')];
+  const pal = [css('--q-g'), css('--fin'), css('--corp'), css('--esg-c4'), css('--muted')];
   // 年期選取：SEL2B 為空 = 全部；可複選
   const drawTrend = () => {
     const shown = TENORS.map((t,i)=>({t,i})).filter(o=>!SEL2B.size || SEL2B.has(o.t));
@@ -998,7 +1038,7 @@ function renderT3(){
   const SERIES3B = [
     {k:'c', ds:{label:'公司債殖利率%', data:[], borderColor:css('--corp'), backgroundColor:css('--corp'), pointRadius:pr, borderWidth:1.8, spanGaps:true, yAxisID:'y'}},
     {k:'f', ds:{label:'金融債殖利率%', data:[], borderColor:css('--fin'), backgroundColor:css('--fin'), pointRadius:2.5, borderWidth:1.8, spanGaps:true, yAxisID:'y'}},
-    {k:'rp', ds:{label:'利差 bp（右軸）', data:[], borderColor:css('--sub'), backgroundColor:css('--sub'), borderDash:[4,3], pointRadius:pr, borderWidth:1.5, spanGaps:true, yAxisID:'y2'}}];
+    {k:'rp', ds:{label:'利差 bp（右軸）', data:[], borderColor:css('--muted'), backgroundColor:css('--muted'), borderDash:[4,3], pointRadius:pr, borderWidth:1.5, spanGaps:true, yAxisID:'y2'}}];
   const drawYS = () => {
     const ys = calcYS(SEL3T), tl = (SEL3T==='all' ? '' : (SEL3T===15 ? '15年以上' : SEL3T+'年')+' ') + (SEL3S==='sub' ? '次順位' : '主順位');
     SERIES3B[0].ds.data = ys.map(x=>x.c); SERIES3B[0].ds.label = tl+'公司債殖利率%';
@@ -1113,8 +1153,8 @@ function renderT4(){
   const yOf = (m,d) => { const r = rows.find(x=>x.d===d&&x.mkt===m); return r? r.yAvg : null; };
   const fOf = d => sum(rows.filter(r=>r.d===d))/YI;
   chart('c4', {data:{labels, datasets:[
-    {type:'line', label:'等殖 殖利率%', data:labels.map(d=>yOf('E',d)), borderColor:css('--accent'), backgroundColor:css('--accent'), pointRadius:2, spanGaps:true, yAxisID:'y'},
-    {type:'line', label:'處所 殖利率%', data:labels.map(d=>yOf('O',d)), borderColor:css('--corp'), backgroundColor:css('--corp'), pointRadius:2, spanGaps:true, yAxisID:'y'},
+    {type:'line', label:'等殖 殖利率%', data:labels.map(d=>yOf('E',d)), borderColor:css('--c-mkt-e'), backgroundColor:css('--c-mkt-e'), pointRadius:2, spanGaps:true, yAxisID:'y'},
+    {type:'line', label:'處所 殖利率%', data:labels.map(d=>yOf('O',d)), borderColor:css('--c-mkt-o'), backgroundColor:css('--c-mkt-o'), borderWidth:2.5, pointRadius:2, spanGaps:true, yAxisID:'y'},
     {type:'bar', label:'成交面額 億元（右軸）', data:labels.map(fOf), backgroundColor:css('--line'), yAxisID:'y2'}]},
     options:{scales:{x:{ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:20},grid:{display:false}},y:{position:'left',ticks:{color:css('--muted')},grid:{color:css('--line')}},y2:{position:'right',ticks:{color:css('--muted')},grid:{display:false}}}}});
   const cols = [{k:'d',t:'日期',l:1},{k:'mkt',t:'市場',l:1,f:mktName}];
@@ -1166,8 +1206,8 @@ function renderT4i(){
   const labels = [...new Set(rows.map(r=>r.d))].sort();
   const fOf = (m,d) => sum(rows.filter(r=>r.d===d && r.mkt===m))/YI;
   chart('c4i', {type:'bar', data:{labels, datasets:[
-    {label:'等殖 成交面額 億元', data:labels.map(d=>fOf('E',d)), backgroundColor:css('--accent'), stack:'f'},
-    {label:'處所 成交面額 億元', data:labels.map(d=>fOf('O',d)), backgroundColor:css('--corp'), stack:'f'}]},
+    {label:'等殖 成交面額 億元', data:labels.map(d=>fOf('E',d)), backgroundColor:css('--c-mkt-e'), stack:'f'},
+    {label:'處所 成交面額 億元', data:labels.map(d=>fOf('O',d)), backgroundColor:css('--c-mkt-o'), stack:'f'}]},
     options:{scales:{x:{stacked:true, ticks:{color:css('--muted'),maxRotation:0,autoSkipPadding:20}, grid:{display:false}}, y:{stacked:true, ticks:{color:css('--muted')}, grid:{color:css('--line')}}}}});
   table($('tb4iB'), [{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1,f:nameCell},{k:'last',t:'最近成交日',l:1},{k:'dy',t:'剩餘年期',f:v=>v==null?'–':fN(v,2)+' 年'},{k:'face',t:'成交面額(億)',f:fY},{k:'lastY',t:'成交殖利率%',f:v=>fN(v)},{k:'y',t:'區間面額加權殖利率%',f:v=>fN(v)},{k:'n',t:'成交天數',f:fI},{k:'count',t:'處所筆數',f:fI},...RATING_COLS,{k:'type',t:'種類',l:1}], bonds, {sort:'face', rowClass:subRow});
   table($('tb4iR'), [{k:'d',t:'日期',l:1},{k:'mkt',t:'市場',l:1,f:mktName},{k:'code',t:'代號',l:1},{k:'name',t:'名稱',l:1},{k:'dy',t:'剩餘年限',f:v=>fN(v,2)},{k:'yAvg',t:'平均殖利率%',f:v=>fN(v)},{k:'face',t:'成交面額(億)',f:fY},{k:'yChg',t:'殖利率漲跌(bp)',f:fBp},{k:'pAvg',t:'平均百元價',f:v=>fN(v)},{k:'rp',t:'利差(bp)',f:v=>fN(v,2)},{k:'count',t:'筆數',f:fI}], rows, {sort:'d'});
@@ -1461,7 +1501,7 @@ const legendGap = {id:'legendGap', beforeInit(ch){ const lg = ch.legend; if(!lg 
 const stackTotals = {id:'stackTotals', afterDatasetsDraw(ch){
   const {ctx} = ch, n = ch.data.labels.length, vis = ch.data.datasets.map((d,i)=>i).filter(i=>ch.isDatasetVisible(i));
   if(!vis.length) return;
-  ctx.save(); ctx.font = '600 12px "Segoe UI","Microsoft JhengHei",sans-serif'; ctx.fillStyle = css('--ink'); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.save(); ctx.font = '600 12px "IBM Plex Sans","Segoe UI","Microsoft JhengHei",sans-serif'; ctx.fillStyle = css('--ink'); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
   for(let i=0;i<n;i++){
     const tot = vis.reduce((s,k)=>s+(+ch.data.datasets[k].data[i]||0),0); if(!tot) continue;
     const top = Math.min(...vis.map(k=>ch.getDatasetMeta(k).data[i].y));
@@ -1471,7 +1511,7 @@ const stackTotals = {id:'stackTotals', afterDatasetsDraw(ch){
 // 單選一種債券時，直條依「原發行年期」分段；主要年期各自一段，其餘歸「其他」，99 年以上（永續）或無年期歸「無到期日」
 const TERM_MAIN = {G:[2,5,7,10,15,20,30], C:[2,3,5,7,10,15], F:[2,3,5,7,10,15]};
 // 同一年期在各圖固定同色
-const TERM_COLOR = {'2年':'#9ecae1','3年':'#59a14f','5年':'#4e79a7','7年':'#edc948','10年':'#f28e2b','15年':'#e15759','20年':'#76b7b2','30年':'#b07aa1','其他':'#bab0ac','無到期日':'#9c755f'};
+const TERM_COLOR = {}; ['2年','3年','5年','7年','10年','15年','20年','30年','其他','無到期日'].forEach((k,i)=>Object.defineProperty(TERM_COLOR, k, {get:()=>css(i<8 ? '--tm'+(i+1) : i===8 ? '--tm-oth' : '--tm-none')}));   // original tenor, short → long = light → dark (ordinal ramp)
 const termBucket = (t, term) => { if(term==null || term>=99) return '無到期日'; const r = Math.round(term); return TERM_MAIN[t].includes(r) && Math.abs(term-r)<0.05 ? r+'年' : '其他'; };
 const termOrder = t => [...TERM_MAIN[t].map(n=>n+'年'), '其他', '無到期日'];
 function stackChart(id, years, labelOf, sums, only, byTerm){
@@ -1609,7 +1649,7 @@ $('q6bank').onchange = drawBank;
 
 // ================= TAB 9 ESG =================
 const ESG_CATS = ['綠色債券','社會責任債券','可持續發展債券','可持續發展連結債券'];
-const ESG_COLOR = {'綠色債券':'#59a14f','社會責任債券':'#4e79a7','可持續發展債券':'#f28e2b','可持續發展連結債券':'#b07aa1'};
+const ESG_COLOR = {}; [['綠色債券','--esg-c1'],['社會責任債券','--fin'],['可持續發展債券','--corp'],['可持續發展連結債券','--esg-c4']].forEach(([k,v])=>Object.defineProperty(ESG_COLOR, k, {get:()=>css(v), enumerable:true}));
 const esgCat = code => ESG[code] ? ESG[code][0] : null;
 let SEG9 = {iss:'all', mat:'all'}, SEL9 = {iss:null, mat:null}, SEL9TOP = {year:null, issuer:null}, TOP9Y = Y0, EXCL9M = false;
 // issuer of an ESG row: issue.js issuer index first; r[9] is the issuer only on ESG_EXTRA rows (10 items) —
@@ -1669,7 +1709,7 @@ function renderT9(){
   drawT9Sel(d); drawT9Top(d);
 }
 // ESG 類別標籤用與圖例相同的顏色
-const esgCol = {k:'cat',t:'ESG 類別',l:1,f:v=>v?`<span class="tag" style="margin-left:0;background:${ESG_COLOR[v]||'#888'};border-color:${ESG_COLOR[v]||'#888'};color:#fff;font-weight:600">${esc(ESG_SHORT[v]||v)}</span>`:''};
+const esgCol = {k:'cat',t:'ESG 類別',l:1,f:v=>v?`<span class="tag" style="margin-left:0;background:${ESG_COLOR[v]||'#888'};border-color:${ESG_COLOR[v]||'#888'};color:var(--card);font-weight:600">${esc(ESG_SHORT[v]||v)}</span>`:''};
 const esgStdCol = {k:'std',t:'採用標準',l:1};
 function esgRow(code, extra, over){ return Object.assign(bondObj(code, Object.assign({cat:esgCat(code), std:ESG[code] ? ESG[code][1] : ''}, extra)), over || {}); }
 function issRows9(list){ return list.map(r=>esgRow(r[0], {name:r[2], issuer:issuerName9(r), idate:r[5], term:r[6], cpn:r[4], amt:r[7], mat:matOf(r[5], r[6], r[8]), extra:!!r[9]}, r[9] ? {sub:false, subUnknown:false} : {})); }
@@ -1734,6 +1774,23 @@ const WEEK = '日一二三四五六';
 function updateAsof(){
   const d = selDate.value, wd = WEEK[new Date(d+'T00:00:00').getDay()];
   $('asof').innerHTML = `資料日期 <b>${esc(d)}</b>（週${wd}）　統計期間 <b>${esc(rangeLabel())}</b>`;
+  renderRibbon(d);
+}
+// benchmark yield ribbon in the header: TPEx 指標利率 for the selected date, change vs the previous trading day (bp)
+function renderRibbon(d){
+  const el = $('ribbon'); if(!el) return;
+  const i = DAYS.findIndex(x=>x.d===d), day = DAYS[i], prev = i>0 ? DAYS[i-1] : null;
+  const get = (dd,t) => (dd && dd.b || []).find(x=>x[0]===t);
+  el.innerHTML = '<div class="rl">指標公債<br>殖利率 %</div>' + TENORS.map(t=>{
+    const b = get(day,t), y = b && b[2]!=null ? b[2] : null, p = get(prev,t);
+    const ch = y!=null && p && p[2]!=null ? Math.round((y-p[2])*1000)/10 : null;
+    const cls = ch==null ? 'flat' : ch>0 ? 'up' : ch<0 ? 'down' : 'flat';
+    const chTxt = ch==null ? '' : ch===0 ? '持平' : `${ch>0?'▲':'▼'}${Math.abs(ch).toFixed(1)} bp`;
+    const last = b && b[6] ? String(b[6]).replace(/\//g,'-') : '';
+    const stale = last && last!==d ? `最近成交 ${last.slice(5).replace('-','/')}` : '';
+    return `<div class="rb" title="${esc(t+'年期指標公債 '+(b?b[1]:''))}"><span class="t">${t}年</span><span class="c ${cls}">${chTxt}</span>`
+      + `<span class="y">${y==null?'—':y.toFixed(4)}</span><span class="s">${stale}</span></div>`;
+  }).join('');
 }
 Object.keys(RENDER).forEach(k=>{ const f = RENDER[k]; RENDER[k] = ()=>{ updateAsof(); f(); }; });
 let cur = 't1';
